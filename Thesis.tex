@@ -1,0 +1,240 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% IMPORTS AND SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% General settings
+\documentclass[11pt,a4paper,notitlepage]{article}
+
+% Misc includes
+\usepackage{array}
+
+% For title + abstract page
+\usepackage{titling}
+
+% For table of contents with links
+\usepackage{hyperref}
+\hypersetup
+{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=blue
+}
+\usepackage{ulem}
+
+% For images
+\usepackage{graphicx}
+\usepackage{subfig}
+
+% For quotes
+\usepackage[english]{babel}
+\usepackage[autostyle, english = american]{csquotes}
+\MakeOuterQuote{"}
+
+% For including code
+\usepackage{listings}
+\usepackage{color}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\lstset{
+  language=Java,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+% Math
+\usepackage{amssymb,amsmath}
+\setlength{\thinmuskip}{3\thinmuskip}
+\setlength{\medmuskip}{3\medmuskip}
+\setlength{\thickmuskip}{3\thickmuskip}
+
+% Document title data
+\title{\Large{TODO\\2015-2016}\\\Huge{TODO}}
+\author{836897 Simone Graziussi}
+\date{TODO}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% DOCUMENT START %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\sloppy
+
+%............................................................................%
+%................................ TITLE PAGE ................................%
+%............................................................................%
+
+\begin{titlingpage}
+    \maketitle
+    \begin{abstract}
+        \large{TODO}
+    \end{abstract}
+\end{titlingpage}
+
+
+%..............................................................................%
+%............................. TABLE OF CONTENTS ..............................%
+%..............................................................................%
+
+\newpage
+\tableofcontents
+\newpage
+
+
+%..............................................................................%
+%................................... INTRO ....................................%
+%..............................................................................%
+
+\part{Introduction}
+
+\section{Abstract}
+
+\section{Testing}
+
+\section{Android}
+
+\section{Android Testing State of the Art}
+
+\section{Introduction to Events}
+
+\section{Background/Motivation}
+
+
+
+%..............................................................................%
+%.................................. LIFECYCLE .................................%
+%..............................................................................%
+
+\part{Lifecycle Testing}
+
+
+\section{Lifecycle}
+
+\subsection{Component Lifecycle}
+
+\subsection{Lifecycle Problems}
+
+\subsection{Existing Lifecycle Testing}
+
+
+
+\section{Static Analysis}
+
+\subsection{Static Program Analysis}
+
+\subsection{Android Lint}
+
+\subsection{Custom Android Lint Checks}
+
+\subsection{Static Lifecycle Checks}
+
+\subsubsection{Target Components}
+
+\subsubsection{Design}
+
+\subsubsection{Implementation}
+
+\subsubsection{Evaluation}
+
+
+
+\section{Dynamic Analysis}
+
+\subsection{Design}
+
+\subsection{Implementation}
+
+\subsection{Evaluation}
+
+%..............................................................................%
+%.................................... EVENTS ..................................%
+%..............................................................................%
+
+\part{Event-based Testing}
+
+
+
+\section{Event-based Systems}
+
+\subsection{Events in Android}
+
+\subsection{Problems with Events}
+
+\subsection{Existing Event Testing}
+
+
+
+\section{Temporal Assertions Language}
+
+\subsection{Consistency Checks}
+
+\subsection{Checks on Single Events}
+
+\subsection{Checks on Sets of Events}
+
+\subsection{Checks on the Whole Stream}
+
+\subsection{Connectives between Checks}
+
+
+
+\section{Reactive Programming}
+
+\subsection{ReactiveX}
+
+\subsection{Components}
+
+\subsection{RxJava and RxAndroid}
+
+\subsection{Events Observable in Android}
+
+
+
+\section{Design}
+
+
+
+\section{Implementation}
+
+
+
+\section{Evaluation}
+
+
+%..............................................................................%
+%................................. CONCLUSION .................................%
+%..............................................................................%
+
+\part{Conclusion}
+
+\section{Recap}
+
+\section{Future Work}
+
+
+%..............................................................................%
+%.................................. REFERENCES ................................%
+%..............................................................................%
+
+\bibliographystyle{plain}
+\bibliography{} 
+
+\end{document}
+
+
