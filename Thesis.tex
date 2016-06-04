@@ -185,7 +185,6 @@ Since Android has its own virtual machine ART, which is not compatible with JVM 
 
 \part{Lifecycle Testing}
 
-
 \section{Lifecycle}
 
 \subsection{Component Lifecycle}
@@ -208,10 +207,9 @@ Finally, an Activity can be Destroyed. In this "state" the Activity instance is 
 The Activity class provides several callbacks for lifecycle changes. These methods can be implemented by the developer to manage the state of the Activity: for example \texttt{onCreate()} can be used to initialize the UI components, \texttt{onStop()} to free resources for the other applications. Note that not all callbacks need to be explicitly implemented for each activity: actually simple Activities usually implement only \texttt{onCreate()}.\bigskip \\
 
 This image shows a simplified scheme of the Activity lifecycle transitions with the corresponding callbacks.
-% \includegraphics[width=450px]{Images/Android/basic-lifecycle.png}
+\includegraphics[width=450px]{Images/Android/basic-lifecycle.png}
 
-[TODO extend with more detailed explanations of callbacks, save instance, etc.?]
-[TODO extend with more detailed diagram?]
+[TODO extend with more detailed explanations of callbacks, save instance, etc.? More detailed diagram?]
 
 \subsection{Fragment Lifecycle}
 The lifecycle of a Fragment is closely related to the lifecycle of the Activity that contains it: for example, when an activity is paused, all the contained Fragments are paused too. In addition to this, however, Fragments can go through lifecycle changes independently of their host Activity: in particular, since fragments can be dynamically added and removed at runtime, they can be created and destroyed while the Activity is running. Moreover, the developer also has the option to store removed fragments in the so-called backstack and be able to restore them later for example when the user presses the "back" button.\smallskip \\
@@ -223,7 +221,7 @@ Like Activities, Fragments are characterized by three static states:
 \end{itemize}
 Lifecycle management for Fragments is very similar to the one for Activities, since all callbacks are the same. Fragments provide however some additional methods to manage the interaction with the host Activity: for example \texttt{onAttach()} is called when the Fragment is linked to an Activity, \texttt{onCreateView()} when the Fragment is ready to build its UI, etc.
 
-\subsection{Managing the Lifecycle}
+\subsection{Managing the Lifecycle}\label{managing_lifecycle}
 Handling the components lifecycle is a critical aspect in developing an Android application and it is often source of bugs or unexpected behaviors. For example, properly implementing Activity/Fragment lifecycle methods ensures that the app
 \begin{itemize}
 	\item does not waste system resources (e.g. device sensors) while the user is not interacting with it
@@ -285,7 +283,7 @@ Android Lint provides more than 100 built-in checks. Some examples:
 	\item HardcodedText (internationalization issue): makes sure that text strings displayed to the user are placed on the appropriate xml files to allow translation and not hard-coded in Java
 \end{itemize}
 
-\subsection{Custom Android Lint Checks [TODO move just before implementation?}
+\subsection{Custom Android Lint Checks [TODO probably better to move just before implementation]}
 \textit{Important note: the Lint API is not final and mostly undocumented. This means that what is reported below is based only on a few examples/tutorials found on the Internet, on the built-in checks implementations and on source code inspection, and not on official documentation. Moreover, since it is not final, future releases of the tool may invalidate the following statements and the custom implementations.}\bigskip \\
 The open source Android Lint API allows to build custom rules for the static analyzer.\medskip \\
 Implementing a custom Lint rule means building four components:
@@ -316,8 +314,61 @@ Finally, registers are sub-classes of \texttt{IssueRegistry} that usually only o
 Once every component has been implemented, to actually include the Lint check in the list of rules enforced by the tool one must copy the generated JAR file of the library in the \texttt{$\sim$/.android/lint/} directory. Using Gradle in Android Studio, one can write a snippet to automatically copy the JAR after each \textit{install} command.
 
 \subsection{Static Lifecycle Checks}
+This part of the thesis focuses on possible lifecycle checks using a static analysis approach, provided by Android Lint. The idea is to consider some components used in the applications that require special attention, either because of their own lifecycle or because they need to be carefully used in accordance to the host component lifecycle.\medskip \\
+As previously mentioned in section \ref{managing_lifecycle}, acquiring and releasing components in accordance to the host Activity/Fragment lifecycle is a critical problem to avoid unexpected behavior or resource waste. An unexpected behavior can be for example the loss of user data: if the developer does not react correctly to an activity being destroyed in a note-taking app the currently written text may be lost. An example of resource waste can be requesting GPS location updates every few seconds in an application that uses maps and failing to cancel them when the application is paused/stopped: the system will continue querying the device sensors even if the user is not currently looking at the map.\bigskip \\
+Static program analysis can help detecting this type of problems. For example, if a method call to acquire a certain component is detected but no call to release it is found in the code, then a warning can be shown to the user. As it can be expected, static analysis may produce false positives or skip some situations where the lifecycle is wrongly managed, but it may help to detect some issues in the early stages of development.
 
 \subsubsection{Target Components}
+In this section a more detailed explanation of the target components that may be useful to check statically is reported. Note that however not all of these static checks have been actually implemented.\bigskip \\
+Each component will be analyzed in terms of
+\begin{itemize}
+	\item Release: should the component be always released after it is acquired? If so, the static analysis can check if the call to release is always performed.
+	\item Best Practices: in which states of the host Activity/Fragment lifecycle is recommended/usual to acquire and release the component? If there are best practices, the analysis can check if the calls follow them.
+	\item Double Instantiation: can acquiring the same component more than once cause some unexpected behavior? If so, the static analysis can check if the resource may be acquired multiple times during the execution.
+\end{itemize}
+Components:
+\begin{itemize}
+	\item Broadcast Receiver: it allows to receive certain types of messages from the system or another application component
+	\begin{itemize}
+		\item Release: the official documentation states that a Broadcast Receiver, if registered with an Activity context (as it is usually the case), should ideally be unregistered before the Activity is done being destroyed, but if it not so the system will clean up the leaked registration anyway and only log an error. In case the receiver is registered using the Application context, however, it will be never unregistered by the system, so missing a call to the unregister method may lead to serious leaks\footnote{https://developer.android.com/reference/android/content/Context.html\#getApplicationContext()}. Moreover, it is reported that the developer should not unregister during an Activity \texttt{onSaveInstanceState()} method, because it won't be called if the user moves back in the history stack\footnote{https://developer.android.com/reference/android/content/BroadcastReceiver.html}
+		\item Best Practices: the only official recommendation on how to handle a Broadcast Receiver in accordance to the lifecycle of the Activity/Fragment that uses it is to unregister it during \texttt{onPause()} if it is registered during \texttt{onResume()}\footnote{https://developer.android.com/reference/android/content/BroadcastReceiver.html}. The common usage of the receiver is to register during \texttt{onResume()} or \texttt{onStart()} and to unregister during \texttt{onPause()} or \texttt{onStop()} respectively.
+		\item Double Instantiation: although not reported in the documentation, registering twice the same Broadcast Receiver leads to receiving each event twice and so it is usually to be avoided.
+	\end{itemize}
+	\item Google API Client: the \texttt{GoogleApiClient} class allows to connect to the Google Play services for several APIs, like Google+, Google Drive, wearables, etc. The developer can either manage the connection manually or leave it to the system. The following specifications are of course valid for the former case.
+	\begin{itemize}
+		\item Release: the API Client should always be disconnected when the application is done using it
+		\item Best Practices: the official recommendation is to connect during \texttt{onStart()} and to disconnect during \texttt{onStop()}\footnote{https://developers.google.com/android/guides/api-client\#start\_a\_manually\_managed\_connection}
+		\item Double Instantiation: it is not a problem since the call to \texttt{connect()} returns immediately if the client is already connected or connecting\footnote{https://developers.google.com/android/reference/com/google/android/gms/common/api/GoogleApiClient\#public-methods}.
+	\end{itemize}
+	\item Fused Location Provider API: the \texttt{FusedLocationProviderApi} class allows to query information about the current location. In particular, we are interested in the functionality that allows to receive periodic updates.
+	\begin{itemize}
+		\item Release: the location updates should be removed by calling the \texttt{removeLocationUpdates()} method
+		\item Best Practices: the official documentation encourages the developer to think whether it may be useful to stop the location updates when the Activity is no longer in focus, to reduce power consumption while the app is in background\footnote{https://developer.android.com/training/location/receive-location-updates.html\#stop-updates}.
+		\item Double Instantiation: does not need to be considered since any previous location updates are replaced by the call to \texttt{requestLocationUpdates()}\footnote{https://developers.google.com/android/reference/com/google/android/gms/location/FusedLocationProviderApi\#public-methods}.
+	\end{itemize}
+	\item Camera:
+		\begin{itemize}
+			\item \texttt{Camera} class: this is the older API to control the device camera, deprecated in API level 21 (Lollipop).
+			\begin{itemize}
+				\item Release: releasing the camera is fundamental. Failing to do so means that all the applications on the device will be unable to use it\footnote{https://developer.android.com/reference/android/hardware/Camera.html\#release()}.
+				\item Best Practices: the best practice is to acquire the camera during \texttt{onResume()} and release it during \texttt{onPause()}\footnote{https://developer.android.com/reference/android/hardware/Camera.html}.
+				\item Double Instantiation: if the developer tries to acquire the camera twice, the system will throw a runtime exception\footnote{https://developer.android.com/reference/android/hardware/Camera.html\#open(int)}.
+			\end{itemize}
+			\item \texttt{camera2} package: this is the new API introduced in Android Lollipop to manage the device camera
+			\begin{itemize}
+				\item Release: although the documentation does not clearly state that the developer \textit{must} release the components, the objects used to manage the camera such as \texttt{ImageReader}\footnote{https://developer.android.com/reference/android/media/ImageReader.html\#close()}, \texttt{CameraDevice}\footnote{https://developer.android.com/reference/android/hardware/camera2/CameraDevice.html\#close()}, \texttt{CameraCaptureSession}\footnote{https://developer.android.com/reference/android/hardware/camera2/CameraCaptureSession.html\#close()}, etc. all provide a \texttt{close()} method to release the resource. In the sample application provided by Google\footnote{https://github.com/googlesamples/android-Camera2Basic/blob/master/Application/src/main/java/com/example/android/camera2basic/Camera2BasicFragment.java} these methods are all called during \texttt{onPause()} and a \texttt{Semaphore} is used "to prevent the app from exiting before closing the camera", so it is safe to assume that releasing these resources is required.
+				\item Double Instantiation: methods to acquire the components like \texttt{setRepeatingRequest()}\footnote{https://developer.android.com/reference/android/hardware/camera2/CameraCaptureSession.html\#setRepeatingRequest(android.hardware.camera2.CaptureRequest, android.hardware.camera2.CameraCaptureSession.CaptureCallback, android.os.Handler)}, \texttt{createCaptureSession()}\footnote{https://developer.android.com/reference/android/hardware/camera2/CameraDevice.html\#createCaptureSession(java.util.List<Candroid.view.Surface>, android.hardware.camera2.CameraCaptureSession.StateCallback, android.os.Handler)}, etc. replace the previous calls. For this reason, there's no need to check double instantiation for correctness, but since most of these calls can take time to complete (\texttt{createCaputrueSession()} "can take several hundred milliseconds") it can be checked for performance reasons.
+			\end{itemize}
+		\end{itemize}
+	\item Ads View: the \texttt{AdView} class is a View used to display banner advertisements.
+	\begin{itemize}
+		\item Best Practices: the class provides methods like \texttt{destroy()}, \texttt{pause()}, etc. that should be called in the Activity/Fragment lifecycle methods with similar name (\texttt{onDestroy()}, \texttt{onPause()}, etc.)\footnote{https://developers.google.com/android/reference/com/google/android/gms/ads/AdView}
+	\end{itemize}
+	\item TODO find more?
+\end{itemize}
+Other components such as Services or Threads should also be carefully managed according to the lifecycle. However, since there are too many different use cases (e.g. a Service may be active during several activities, work when the application is in background, etc.) it is difficult to extract a list of best practices and, as a consequence, to statically check the code for misuse.
+
+
 
 \subsubsection{Design}
 
@@ -335,7 +386,6 @@ Once every component has been implemented, to actually include the Lint check in
 
 \subsection{Evaluation}
 
-aaa
 
 %..............................................................................%
 %.................................... EVENTS ..................................%
@@ -390,8 +440,33 @@ DEvA allows a very fast analysis (usually 1 or 2 minutes) and guarantees complet
 \section{Temporal Assertions Language}
 
 \subsection{Consistency Checks}
+An approach to event-based testing is to define consistency checks, i.e. conditions that should be verified in the event stream. For example we can define the happens-before relationship between two or more events, specify the exact number of events of a certain type that can appear during a particular execution and so on.\medskip \\
+The idea of event-based testing described in this part of the thesis is based on a temporal assertions language: a language that allows to express consistency checks on some of the events generated during the application execution and, in case they are not satisfied, the assertion error is notified to the developer. A detailed explanation of the language to express checks is reported in the next sections.\bigskip \\
+Components and abbreviations:
+\begin{itemize}
+	\item Check (\textit{c}, \textit{c1}, \textit{c2},...): it is the final output of a specification
+	\item Event (\textit{e}, \textit{e1}, \textit{e2},...): an event of the stream
+	\item Matcher (\textit{m}, \textit{m1}, \textit{m2},...): a specification that describes one or more events in the stream. For example a matcher "is a text change event" matches all events of the stream that represent a text change, "is a click on myButton" matches all click events on that specific button.
+	\item Number (\textit{n}, \textit{i}): a non-negative integer value
+\end{itemize}\medskip
+Each check will be formalized by:
+\begin{itemize}
+	\item Code structure: abstract description of the check specification. It will have the same structure of the final code but use the aforementioned abbreviations to tell which components are expected.
+	\item Description: a brief explanation of the check logic
+	\item First Order Logic (FOL) formalization of the check meaning, expressed using the following logic relationships:
+	\begin{itemize}
+		\item $match(e, m)$ means that the matcher \textit{m} matches the event \textit{e}.
+		\item $before(e1, e2)$ means that the event \textit{e1} is generated in the sequence before \textit{e2}.
+		\item $between(e2, e1, e3) \equiv before(e2, e1) \land before(e1, e3)$ means that the event \textit{e1} is generated in the sequence after \textit{e2} and before 		\textit{e3}.
+	\end{itemize}
+	\item Visual representation: shows some examples of event streams and the corresponding check outcome (success or failure). The outcome will be placed in the spot where it will be actually produced by the system: some checks may not need to explore the whole stream, if the condition is fulfilled or violated after an intermediate event the check "short-circuits".
+	\item Actual code example: an example of real call as implemented by the system. The structure of the Java classes and objects will be clear later when the implementation will be explained in detail
+\end{itemize}
+
 
 \subsection{Checks on Single Events}
+
+The first type of checks focuses on single events at a time: for example we may say that an event of a certain type can be detected in the stream only after another event of a certain type.
 
 \subsubsection{Can Happen Only After}
 
@@ -446,6 +521,15 @@ DEvA allows a very fast analysis (usually 1 or 2 minutes) and guarantees complet
 
 \subsection{Checks on Sets of Events}
 
+These checks work on sets of events: for example we may say that a certain event generates a set of \textit{n} other events. The cardinality of each set is specified by the quantifiers
+\begin{itemize}
+	\item exactly
+	\item at most
+	\item at least
+\end{itemize}
+Only the formulas for "exactly" will be written since the others can be derived by analogy.\bigskip \\
+First Order Logic specifications use the counting quantifiers~\cite{Pratt-Hartmann:2014:LCE:2603088.2603117} as a notational shorthand, i.e. $\exists_{=n} x$ means that there exist exactly \textit{n} elements \textit{x}.
+
 \subsubsection{Must Happen After}
 
 \begin{center}
@@ -471,7 +555,7 @@ DEvA allows a very fast analysis (usually 1 or 2 minutes) and guarantees complet
   \rotatebox[origin=c]{90}{\textbf{ FOL }} & 
   
   	\begin{multline*}
-	\forall e2 \Bigg( match(e2, m2) \Rightarrow \exists_n e1 \bigg( match(e1, m1) \land before(e2, e1) \\ \land \neg \exists e2' \Big( match(e2', m2) \land between(e2, e2', e1) \Big) \bigg) \Bigg)
+	\forall e2 \Bigg( match(e2, m2) \Rightarrow \exists_{=n} e1 \bigg( match(e1, m1) \land before(e2, e1) \\ \land \neg \exists e2' \Big( match(e2', m2) \land between(e2, e2', e1) \Big) \bigg) \Bigg)
 	\end{multline*}
 	
   	\\ \hline
@@ -497,12 +581,66 @@ DEvA allows a very fast analysis (usually 1 or 2 minutes) and guarantees complet
 \egroup
 \end{center}
 
-
-
 \subsection{Checks on the Whole Stream}
+
+The third type of checks concerns the entire stream of events: they allow for example to specify the number of all the events of a certain type in the whole sequence generated by a particular execution.
 
 \subsection{Connectives between Checks}
 
+These constructs allow to specify the classical logic connectives between one or more of the previously defined consistency checks.
+
+\subsubsection{All Hold}
+
+\begin{center}
+\bgroup
+\def\arraystretch{1.5}%
+\begin{longtable}{ | m{0.3cm} | m{15cm} | }
+  \hline
+  
+  \rotatebox[origin=c]{90}{\textbf{ Structure }} & 
+  
+  	\begin{lstlisting}
+	allHold(c1, c2,...)
+	\end{lstlisting}
+	
+  	\\ \hline
+  	 
+  \rotatebox[origin=c]{90}{\textbf{ Description }} & 
+  
+  	All sub-checks \textit{c1}, \textit{c2}, etc. must succeed.
+	
+  	\\ \hline
+
+  \rotatebox[origin=c]{90}{\textbf{ FOL }} & 
+  
+  	\begin{multline*}
+	c1 \land c2 \land ...
+	\end{multline*}
+	
+  	\\ \hline
+
+  \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
+  
+	\raisebox{-105pt}{\includegraphics[width=400px]{Images/Language/AllHold.png}}
+	
+	
+  	\\ \hline
+  	
+  \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
+  
+  	\begin{lstlisting}
+	allHold(
+		exactly(1).eventsWhereEach(isDownloadImage())
+			.mustHappenAfter(anEventThat(isClickOn(downloadButton))),
+		anEventThat(isEnlargeImage())
+			.canHappenOnlyAfter(anEventThat(isDownloadImage)))
+	\end{lstlisting}
+	
+  	\\ \hline  	
+  	 
+\end{longtable}
+\egroup
+\end{center}
 
 
 \section{Reactive Programming}
@@ -544,7 +682,7 @@ DEvA allows a very fast analysis (usually 1 or 2 minutes) and guarantees complet
 %..............................................................................%
 
 \bibliographystyle{plain}
-\bibliography{Bib/DEvA,Bib/CAFA,Bib/EventRacer,Bib/JUnit,Bib/Lint,Bib/Mockito,Bib/Oracles,Bib/ReactiveLocation,Bib/ReactiveNetwork,Bib/ReactiveSensors,Bib/Retrofit,Bib/Robolectric,Bib/RxAndroid,Bib/RxBinding,Bib/RxBroadcast,Bib/RxFileObserver,Bib/RxGoogleMaps,Bib/RxJava,Bib/RxLifecycle,Bib/RxPermissions,Bib/RxPreferences,Bib/RxWear,Bib/StorIO,Bib/THOR.bib} 
+\bibliography{Bib/DEvA,Bib/CAFA,Bib/EventRacer,Bib/JUnit,Bib/Lint,Bib/Mockito,Bib/Oracles,Bib/ReactiveLocation,Bib/ReactiveNetwork,Bib/ReactiveSensors,Bib/Retrofit,Bib/Robolectric,Bib/RxAndroid,Bib/RxBinding,Bib/RxBroadcast,Bib/RxFileObserver,Bib/RxGoogleMaps,Bib/RxJava,Bib/RxLifecycle,Bib/RxPermissions,Bib/RxPreferences,Bib/RxWear,Bib/StorIO,Bib/THOR,Bib/CountingLogic} 
 
 \end{document}
 
