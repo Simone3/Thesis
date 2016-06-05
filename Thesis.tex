@@ -143,20 +143,31 @@ Android applications are built by five main components, each with its specific p
 \end{itemize} 
 Activities, services and Broadcast Receivers are started asynchronously by messages called Intents. This allows not only an application to start its own components, but also to call on other applications. For example, a game may start its internal GameService to manage the game loop, but also send an intent to a social network application to share the game progress.
 
-\section{Android Testing State of the Art}
-Android tests are mainly based on JUnit~\cite{JUnit}, a testing framework for Java. It allows to create classes called test cases that contain methods annotated with \texttt{@Test}, each representing a test.\bigskip \\
+%..............................................................................%
+%............................ STATE OF THE ART ................................%
+%..............................................................................%
+
+\part{Android Testing State of the Art}
+
+Android tests are mainly based on JUnit~\cite{JUnit}, a testing framework for Java. It allows to create classes called test cases that contain methods annotated with \texttt{@Test}, each representing a test.
+
+\section{Unit Testing}
 White-box unit testing in Android can be
 \begin{itemize}
 	\item Local: it runs on the local development machine (i.e. the computer where the application is coded). It has the advantage of being fast (avoids the overhead to load the application in a device/emulator), but can be exploited only if the tested unit has no dependencies or simple dependencies. This means that the test case should not use any device-specific features (e.g. expect a sensor input) or, if it does so, they should be minimal since they need to be mocked using for example tools like Mockito~\cite{Mockito}.
 	\item Instrumented: it is executed in a physical device or on an emulator and so has access to instrumentation information, such as the Context (information about the application environment). It is slower than the previous case but it's more convenient if the unit dependencies are too complex to mock.
 	\item Hybrid: the external library Robolectric~\cite{Robolectric} tries to take the advantages of the previous two approaches, i.e. it runs "instrumented" tests on the local machine, without mocking. As reported on the website, Robolectric allows a test style that is closer to black box testing, making the tests more effective for refactoring and allowing the tests to focus on the behavior of the application instead of the implementation of Android.
-\end{itemize}\bigskip
+\end{itemize}
+
+\section{UI Testing}
 Android also provides a way to test User Interface (UI) to see if it behaves as expected. This type of testing can be defined as a grey-box approach: the application is tested at the user level without considering the actual implementation of the UI, but the definition of the test cases may require to know some information on the internal structure, for example the IDs of the buttons to be clicked.
 \begin{itemize}
-	\item UI testing on a single app: the Espresso library provides APIs for writing UI tests to simulate user interactions. In general, defining of a test case means building a series of \texttt{onView(Matcher).perform(ViewAction).check(ViewAssertion)} instructions, i.e. select a particular View that matches some description (e.g. a button with "Start" text), perform one or more actions on it (e.g. click) and check if some conditions are true (e.g. if after the click the button text changes). The main advantages of Espresso are that the test cases are easily readable and understood, and that it has automatic synchronization (before performing an action it waits for the previous ones to be completed, i.e. for the main thread to be idle).
+	\item UI testing on a single app: the Espresso library provides APIs for writing UI tests to simulate user interactions. In general, defining a test case means building a series of \texttt{onView(Matcher).perform(ViewAction).check(ViewAssertion)} instructions, i.e. select a particular View that matches some description (e.g. a button with "Start" text), perform one or more actions on it (e.g. click) and check if some conditions are true (e.g. if after the click the button text changes). The main advantages of Espresso are that the test cases are easily readable and understood, and that it has automatic synchronization (before performing an action it waits for the previous ones to be completed, i.e. for the main thread to be idle).
 	\item UI testing on multiple apps: the UI Automator library allows to test if the developed application interacts correctly with the system or other apps (e.g. the application may request an image, the Camera app is opened, the picture is taken and then the control goes back to the original application). 
-\end{itemize}\bigskip
-In addition to this, Android also offers some tools to run and test an application without accessing the source code (black-box testing):
+\end{itemize}
+
+\section{Runner Tools}
+In addition to the testing frameworks described in the previous sections, Android also offers some tools to run and test an application without accessing the source code (black-box testing):
 \begin{itemize}
 	\item UI Exerciser Monkey: allows to run an application on a physical device or emulator generating a pseudo-random (but repeatable) streams of user events (e.g. clicks) and system-level events (e.g. start call). The developer can set several options like target package, probability of certain events, etc.
 	\item monkeyrunner: controls a device or emulator from a workstation by sending specific commands and events defined as a Python program. It also allows to take screenshot during the test execution and store them on the workstation.
@@ -173,10 +184,20 @@ where \texttt{Expression1} is the boolean expression to be checked and \texttt{E
 Many frameworks, including JUnit itself, offer several utility methods to easily write more complex assertions without using the \texttt{assert} keyword. For example, the method \texttt{assertEquals(String message, Object expected, Object actual)} checks that the two given objects are equal and, if not, throws an \texttt{AssertionError} with the given message.\bigskip \\
 Since Android has its own virtual machine ART, which is not compatible with JVM from Oracle, the \texttt{assert} keyword is not supported by default\footnote{It is however possible to manually enable assertions on a given device using for example the Android Debug Bridge command \texttt{adb shell setprop debug.assert 1} (assertions will be enabled for all applications until the device is rebooted), but the Android developers themselves discourage their use}. For this reason, in an Android application assertions are usually created exploiting JUnit-like methods that directly throw an \texttt{AssertionError} if the check fails. This means for example using the assertions provided by Android (via \texttt{Assert}, \texttt{MoreAsserts} and \texttt{ViewAssert} classes), the JUnit framework itself or other external libraries.
 
+\section{What's missing in Android testing (?)}
+?
+
+%..............................................................................%
+%............................... BACKGROUND ...................................%
+%..............................................................................%
+
+\part{Background}
+
 \section{Introduction to Events}
 
 \section{Background/Motivation}
 
+\section{Three Levels of Testing}
 
 
 %..............................................................................%
@@ -185,10 +206,15 @@ Since Android has its own virtual machine ART, which is not compatible with JVM 
 
 \part{Lifecycle Testing}
 
+\section{Introduction}
+The focus this part of the thesis is on a specific type of events that are generated by Android applications: lifecycle changes. As it will be explained later in detail, handling the lifecycle of the app components like Activities and Fragments is a critical aspect of Android development, and so this type of events deserves a separate in-depth analysis.\medskip \\
+In particular, two approaches for lifecycle testing will be proposed: static analysis and dynamic analysis. The former will try to analyze the source code of the application to detect possible issues related to the handling of some components in accordance to the host Activity/Fragment lifecycle, for example failing to release a resource that was previously acquired. The dynamic analysis approach, instead, will focus on pre-generated test cases that allow the developer to express some actions to be performed and conditions to be checked in common lifecycle events sequences, which will be used in several tests to assess the robustness of the application.\medskip \\
+The following sections will present first a detailed explanation of the main concepts of lifecycle in Android applications, then the static approach will be analyzed and finally the dynamic approach will be described.
+
 \section{Lifecycle}
 
 \subsection{Component Lifecycle}
-App components in Android such as Activities, Fragments and Services are characterized by their lifecycle, i.e. the current runtime state. In general each component is started and then destroyed, but some can also be paused and resumed, and go through several other states. When a lifecycle state transition happens, the Android system allows the developers to implement some callbacks in the component implementation to manage their behavior in those particular situations.
+App components in Android such as Activities, Fragments and Services are characterized by their lifecycle, i.e. the current runtime state. In general each component is started and then destroyed, but some can also be paused and resumed, and go through several other states. When a lifecycle state transition happens, the Android system allows the developers to implement some callbacks (Java methods, usually overridden from the component class) in the component implementation to manage their behavior in those particular situations.
 
 \subsection{Activity Lifecycle}
 An Activity can be in three static states:
@@ -225,21 +251,59 @@ Lifecycle management for Fragments is very similar to the one for Activities, si
 Handling the components lifecycle is a critical aspect in developing an Android application and it is often source of bugs or unexpected behaviors. For example, properly implementing Activity/Fragment lifecycle methods ensures that the app
 \begin{itemize}
 	\item does not waste system resources (e.g. device sensors) while the user is not interacting with it
-	\item stops its execution when the user leaves the application (for example a game should pause if the user opens another application or a music player should pause when the user receives a phone call)
+	\item stops its execution when the user leaves the application (for example a game should pause if the user receives a phone call)
 	\item retains its state if the user leaves and then returns to the application (e.g. a messaging app must keep a partially written message even if the user puts the app in background for a moment)
 	\item does not crash or loses user progress when lifecycle changes occur (e.g. an app that does not correctly manage lifecycle may crash with a NullPointerException if some internal component was destroyed during \texttt{onStop()} but not restored during \texttt{onStart()})
 	\item adapts to configuration changes (like a device rotation between landscape and portrait modes) without losing data or crashing
 \end{itemize}
 In general, for Activities and Fragments the developer should make sure to
 \begin{itemize}
-	\item during onCreate()
+	\item during \texttt{onCreate()}
 	\begin{itemize}
-		\item ... [release all remaining resources in onDestroy()]
+		\item set the layout resource defining the UI
+		\item initialize View components (e.g. add click listeners to buttons)
+		\item initialize the component logic (e.g. class-scope variables)
+		\item restore the previous state (if any) saved during \texttt{onSaveInstanceState()} [this can be alternatively performed during \texttt{onRestoreInstanceState()}]
 	\end{itemize}
+	\item during \texttt{onRestart()}
+	\begin{itemize}
+		\item Requery raw Cursor objects previously deactivated during \texttt{onStop()}
+	\end{itemize}
+		\item during \texttt{onStart()}
+	\begin{itemize}
+		\item acquire "secondary" resources (e.g. Broadcast Receiver)
+		\item verify system features (e.g. GPS enabled), because they may change when the application is in background
+	\end{itemize}
+	\item during \texttt{onResume()}
+	\begin{itemize}
+		\item start animations and similar CPU-intensive operations
+		\item acquire "critical" resources (e.g. camera, sensors)
+		\item should \textit{not} restart on-going operations that require user visibility (e.g. games, videos), but let the user decide when to do so
+	\end{itemize}
+	\item during \texttt{onPause()}:
+	\begin{itemize}
+		\item commit unsaved changes made by the user (e.g. save a draft for an unfinished email), if it does not require too much time
+		\item stop animations and other things that may be consuming CPU
+		\item stop on-going operations that require user visibility (e.g. games, videos)
+		\item release "critical" resources (e.g. camera, sensors)
+		\item should \textit{not} perform any long running operation, the call to this method must be very quick
+	\end{itemize}
+	\item during \texttt{onStop()}
+	\begin{itemize}
+		\item release "secondary" resources (e.g. Broadcast Receiver)
+		\item perform CPU-intensive shutdown operations (e.g. write unsaved data to database)
+	\end{itemize}
+	\item during \texttt{onDestroy()}
+	\begin{itemize}
+		\item stop background threads created during \texttt{onCreate()}
+		\item release long-running resources that could create memory leaks
+		\item should \textit{not} save data, because the method may not be called in all situations
+	\end{itemize}
+
 \end{itemize}
 
 \subsection{Existing Lifecycle Testing}
-Due to the importance of lifecycle handling, some approaches to test applications focusing on this aspect have been developed.\smallskip \\
+Due to the importance of lifecycle handling, some approaches to test applications focusing on this aspect have been developed.\bigskip \\
 One example is THOR~\cite{Adamsen:2015:SEA:2771783.2771786}. The idea of the tool is to run pre-existing UI test cases (defined in Robotium or Espresso) in adverse conditions to test their robustness. These adverse conditions are not however unusual events, but common expected behaviors of the application. In particular, THOR injects in the tests several neutral system events, i.e. events that are not expected to change the outcome of the test. These neutral events are mainly related to Activity lifecycle: for example Pause $\rightarrow$ Resume; Pause $\rightarrow$ Stop $\rightarrow$ Restart; Audio
 focus loss $\rightarrow$ Audio focus gain. Neutral events injected in an application that does not manage the lifecycle correctly can lead to the discovery of bugs, which are not necessarily crashes but also unexpected behaviors for the specific application.\smallskip \\
 The tool provides several interesting features like
@@ -256,6 +320,8 @@ While very interesting and useful for bug detection, THOR is not a very user-fri
 
 
 \section{Static Analysis}
+
+\subsection{Introduction}
 
 \subsection{Static Program Analysis}
 As opposed to dynamic analysis that requires to actually run an application, static analysis only inspects the source code. One of the techniques for static analysis is  to build the Abstract Syntax Tree (AST) of the application, i.e. the tree representation of the code structure, and visit it starting from the root. In the AST each node represents a syntax construct: for example in Java we may have class declaration nodes, method invocation nodes, branch nodes, etc.\medskip \\
@@ -279,25 +345,25 @@ Each component will be analyzed in terms of
 \begin{itemize}
 	\item Release: should the component be always released after it is acquired? If so, the static analysis can check if the call to release is always performed.
 	\item Best Practices: in which states of the host Activity/Fragment lifecycle is recommended/usual to acquire and release the component? If there are best practices, the analysis can check if the calls follow them.
-	\item Double Instantiation: can acquiring the same component more than once cause some unexpected behavior? If so, the static analysis can check if the resource may be acquired multiple times during the execution.
-\end{itemize}
-Components:
+	\item Double Instantiation: can acquiring the same component more than once cause some unexpected behavior or waste computational power? If so, the static analysis can check if the resource may be acquired multiple times during the execution.
+\end{itemize}\medskip
+Examples of Android components that may be checked with static analysis are:
 \begin{itemize}
 	\item Broadcast Receiver: it allows to receive certain types of messages from the system or another application component
 	\begin{itemize}
-		\item Release: the official documentation states that a Broadcast Receiver, if registered with an Activity context (as it is usually the case), should ideally be unregistered before the Activity is done being destroyed, but if it not so the system will clean up the leaked registration anyway and only log an error. In case the receiver is registered using the Application context, however, it will be never unregistered by the system, so missing a call to the unregister method may lead to serious leaks\footnote{https://developer.android.com/reference/android/content/Context.html\#getApplicationContext()}. Moreover, it is reported that the developer should not unregister during an Activity \texttt{onSaveInstanceState()} method, because it won't be called if the user moves back in the history stack\footnote{https://developer.android.com/reference/android/content/BroadcastReceiver.html}
+		\item Release: the official documentation states that a Broadcast Receiver, if registered with an Activity context (as it is usually the case), should ideally be unregistered before the Activity is done being destroyed, but if it not so the system will clean up the leaked registration anyway and only log an error. In case the receiver is registered using the Application context, however, it will be never unregistered by the system, so missing a call to the unregister method may lead to serious leaks\footnote{https://developer.android.com/reference/android/content/Context.html\#getApplicationContext()}. Moreover, it is reported that the developer should not unregister during an Activity \texttt{onSaveInstanceState()} method, because it won't be called if the user moves back in the history stack\footnote{https://developer.android.com/reference/android/content/BroadcastReceiver.html}.
 		\item Best Practices: the only official recommendation on how to handle a Broadcast Receiver in accordance to the lifecycle of the Activity/Fragment that uses it is to unregister it during \texttt{onPause()} if it is registered during \texttt{onResume()}\footnote{https://developer.android.com/reference/android/content/BroadcastReceiver.html}. The common usage of the receiver is to register during \texttt{onResume()} or \texttt{onStart()} and to unregister during \texttt{onPause()} or \texttt{onStop()} respectively.
 		\item Double Instantiation: although not reported in the documentation, registering twice the same Broadcast Receiver leads to receiving each event twice and so it is usually to be avoided.
 	\end{itemize}
 	\item Google API Client: the \texttt{GoogleApiClient} class allows to connect to the Google Play services for several APIs, like Google+, Google Drive, wearables, etc. The developer can either manage the connection manually or leave it to the system. The following specifications are of course valid for the former case.
 	\begin{itemize}
-		\item Release: the API Client should always be disconnected when the application is done using it
-		\item Best Practices: the official recommendation is to connect during \texttt{onStart()} and to disconnect during \texttt{onStop()}\footnote{https://developers.google.com/android/guides/api-client\#start\_a\_manually\_managed\_connection}
+		\item Release: the API Client should always be disconnected when the application is done using it.
+		\item Best Practices: the official recommendation is to connect during \texttt{onStart()} and to disconnect during \texttt{onStop()}\footnote{https://developers.google.com/android/guides/api-client\#start\_a\_manually\_managed\_connection}.
 		\item Double Instantiation: it is not a problem since the call to \texttt{connect()} returns immediately if the client is already connected or connecting\footnote{https://developers.google.com/android/reference/com/google/android/gms/common/api/GoogleApiClient\#public-methods}.
 	\end{itemize}
 	\item Fused Location Provider API: the \texttt{FusedLocationProviderApi} class allows to query information about the current location. In particular, we are interested in the functionality that allows to receive periodic updates.
 	\begin{itemize}
-		\item Release: the location updates should be removed by calling the \texttt{removeLocationUpdates()} method
+		\item Release: the location updates should be removed by calling the \texttt{removeLocationUpdates()} method.
 		\item Best Practices: the official documentation encourages the developer to think whether it may be useful to stop the location updates when the Activity is no longer in focus, to reduce power consumption while the app is in background\footnote{https://developer.android.com/training/location/receive-location-updates.html\#stop-updates}.
 		\item Double Instantiation: does not need to be considered since any previous location updates are replaced by the call to \texttt{requestLocationUpdates()}\footnote{https://developers.google.com/android/reference/com/google/android/gms/location/FusedLocationProviderApi\#public-methods}.
 	\end{itemize}
@@ -312,12 +378,12 @@ Components:
 			\item \texttt{camera2} package: this is the new API introduced in Android Lollipop to manage the device camera
 			\begin{itemize}
 				\item Release: although the documentation does not clearly state that the developer \textit{must} release the components, the objects used to manage the camera such as \texttt{ImageReader}\footnote{https://developer.android.com/reference/android/media/ImageReader.html\#close()}, \texttt{CameraDevice}\footnote{https://developer.android.com/reference/android/hardware/camera2/CameraDevice.html\#close()}, \texttt{CameraCaptureSession}\footnote{https://developer.android.com/reference/android/hardware/camera2/CameraCaptureSession.html\#close()}, etc. all provide a \texttt{close()} method to release the resource. In the sample application provided by Google\footnote{https://github.com/googlesamples/android-Camera2Basic/blob/master/Application/src/main/java/com/example/android/camera2basic/Camera2BasicFragment.java} these methods are all called during \texttt{onPause()} and a \texttt{Semaphore} is used "to prevent the app from exiting before closing the camera", so it is safe to assume that releasing these resources is required.
-				\item Double Instantiation: methods to acquire the components like \texttt{setRepeatingRequest()}\footnote{https://developer.android.com/reference/android/hardware/camera2/CameraCaptureSession.html\#setRepeatingRequest(android.hardware.camera2.CaptureRequest, android.hardware.camera2.CameraCaptureSession.CaptureCallback, android.os.Handler)}, \texttt{createCaptureSession()}\footnote{https://developer.android.com/reference/android/hardware/camera2/CameraDevice.html\#createCaptureSession(java.util.List<Candroid.view.Surface>, android.hardware.camera2.CameraCaptureSession.StateCallback, android.os.Handler)}, etc. replace the previous calls. For this reason, there's no need to check double instantiation for correctness, but since most of these calls can take time to complete (\texttt{createCaputrueSession()} "can take several hundred milliseconds") it can be checked for performance reasons.
+				\item Double Instantiation: methods to acquire the components like \texttt{setRepeatingRequest()}\footnote{https://developer.android.com/reference/android/hardware/camera2/CameraCaptureSession.html\#setRepeatingRequest(android.hardware.camera2.CaptureRequest, android.hardware.camera2.CameraCaptureSession.CaptureCallback, android.os.Handler)}, \texttt{createCaptureSession()}\footnote{https://developer.android.com/reference/android/hardware/camera2/CameraDevice.html\#createCaptureSession(java.util.List<Candroid.view.Surface>, android.hardware.camera2.CameraCaptureSession.StateCallback, android.os.Handler)}, etc. replace the previous calls. For this reason, there's no need to check double instantiation for correctness, but since most of these calls can take time to complete (\texttt{createCaptureSession()} "can take several hundred milliseconds") it can be checked for performance reasons.
 			\end{itemize}
 		\end{itemize}
 	\item Ads View: the \texttt{AdView} class is a View used to display banner advertisements.
 	\begin{itemize}
-		\item Best Practices: the class provides methods like \texttt{destroy()}, \texttt{pause()}, etc. that should be called in the Activity/Fragment lifecycle methods with similar name (\texttt{onDestroy()}, \texttt{onPause()}, etc.)\footnote{https://developers.google.com/android/reference/com/google/android/gms/ads/AdView}
+		\item Best Practices: the class provides methods like \texttt{destroy()}, \texttt{pause()}, etc. that should be called in the Activity/Fragment lifecycle methods with similar name (\texttt{onDestroy()}, \texttt{onPause()}, etc.)\footnote{https://developers.google.com/android/reference/com/google/android/gms/ads/AdView}.
 	\end{itemize}
 	\item TODO find more?
 \end{itemize}
@@ -381,6 +447,10 @@ Given the components listed in the previous section, the code structure of the s
 
 \section{Dynamic Analysis}
 
+\subsection{Introduction}
+
+\subsection{Lifecycle Test Cases}
+
 \subsection{Design}
 
 \subsection{Implementation}
@@ -394,8 +464,12 @@ Given the components listed in the previous section, the code structure of the s
 
 \part{Event-based Testing}
 
+\section{Introduction}
+In this part of the thesis a system to test Android applications from the point of view of the generated events will be presented. In particular, the idea is to allow the developer to specify some conditions on the event stream (for example that an event of a certain type always comes after another event of a certain type) that will later be verified at runtime. The implementation of this event-based testing approach will exploit the ReactiveX library, an innovative system of industrial interest (it is employed for example by Microsoft and Netflix) that allows to observe, transform and listen to events.\medskip \\
+The following sections will present first an introduction to event-based systems, then a formalization of the temporal assertions language used to define the consistency checks on the event stream, followed by a detailed explanation of the design, implementation and evaluation of the system.
+
 \section{Event-based Systems}
-Event-Driven Architecture is a software pattern where the focus is on generation and reaction to events. An event can be defined as a message generated by a producer that represents a change of state or a relevant action performed by some component/actor (e.g. the user). Once generated, events are sent via event channels to all the consumers that are interested to them. Event-Driven Architecture are
+Event-Driven Architecture is a software pattern where the focus is on generation and reaction to events. An event can be defined as a message generated by a producer that represents a change of state or a relevant action performed by some component/actor (e.g. the user). Once generated, events are sent via event channels to all the consumers that are interested to them. Event-Driven Architectures are
 \begin{itemize}
 	\item extremely loosely coupled: the producer does not know about the consequences of its events. It just generates them and then it's up to the consumers to manage everything else.
 	\item well distributed: an event can be anything and exist almost anywhere
@@ -453,7 +527,7 @@ Components and abbreviations:
 Each check will be formalized by:
 \begin{itemize}
 	\item Code structure: abstract description of the check specification. It will have the same structure of the final code but use the aforementioned abbreviations to tell which components are expected.
-	\item Description: a brief explanation of the check logic
+	\item Description: a brief explanation of the check logic.
 	\item First Order Logic (FOL) formalization of the check meaning, expressed using the following logic relationships:
 	\begin{itemize}
 		\item $match(e, m)$ means that the matcher \textit{m} matches the event \textit{e}.
@@ -461,7 +535,7 @@ Each check will be formalized by:
 		\item $between(e2, e1, e3) \equiv before(e2, e1) \land before(e1, e3)$ means that the event \textit{e1} is generated in the sequence after \textit{e2} and before 		\textit{e3}.
 	\end{itemize}
 	\item Visual representation: shows some examples of event streams and the corresponding check outcome (success or failure). The outcome will be placed in the spot where it will be actually produced by the system: some checks may not need to explore the whole stream, if the condition is fulfilled or violated after an intermediate event the check "short-circuits".
-	\item Actual code example: an example of real call as implemented by the system. The structure of the Java classes and objects will be clear later when the implementation will be explained in detail
+	\item Actual code example: an example of real call as implemented by the system. The structure of the Java classes and objects will be clear later when the implementation will be explained in detail.
 \end{itemize}
 
 
@@ -588,7 +662,7 @@ The third type of checks concerns the entire stream of events: they allow for ex
 
 \subsection{Connectives between Checks}
 
-These constructs allow to specify the classical logic connectives between one or more of the previously defined consistency checks.
+These constructs allow to specify the standard logic connectives between one or more of the previously defined consistency checks.
 
 \subsubsection{All Hold}
 
