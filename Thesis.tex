@@ -280,7 +280,7 @@ In general, for Activities and Fragments the developer should make sure to
 		\item acquire "critical" resources (e.g. camera, sensors)
 		\item should \textit{not} restart on-going operations that require user visibility (e.g. games, videos), but let the user decide when to do so
 	\end{itemize}
-	\item during \texttt{onPause()}:
+	\item during \texttt{onPause()}
 	\begin{itemize}
 		\item commit unsaved changes made by the user (e.g. save a draft for an unfinished email), if it does not require too much time
 		\item stop animations and other things that may be consuming CPU
@@ -322,6 +322,7 @@ While very interesting and useful for bug detection, THOR is not a very user-fri
 \section{Static Analysis}
 
 \subsection{Introduction}
+This section will present static lifecycle checks more in detail. First a short introduction of the main concepts of static program analysis will be presented, then a detailed explanation of its application in lifecycle testing.
 
 \subsection{Static Program Analysis}
 As opposed to dynamic analysis that requires to actually run an application, static analysis only inspects the source code. One of the techniques for static analysis is  to build the Abstract Syntax Tree (AST) of the application, i.e. the tree representation of the code structure, and visit it starting from the root. In the AST each node represents a syntax construct: for example in Java we may have class declaration nodes, method invocation nodes, branch nodes, etc.\medskip \\
@@ -389,9 +390,15 @@ Examples of Android components that may be checked with static analysis are:
 \end{itemize}
 Other components such as Services or Threads should also be carefully managed according to the lifecycle. However, since there are too many different use cases (e.g. a Service may be active during several activities, work when the application is in background, etc.) it is difficult to extract a list of best practices and, as a consequence, to statically check the code for misuse.
 
+TODO maybe add checks about the actions during onPause etc. like animations, view manipulation, etc.?
+
 \subsection{Design}
+TODO needed? Not much to say...
 
 \subsection{Implementation}
+
+\subsubsection{Introduction}
+Not all the static checks listed in the previous section have been implemented, but just a selected few to show what can be achieved with static analysis (?). TODO check, expand
 
 \subsubsection{Android Lint}
 Android Lint~\cite{Lint} is a static analysis tool that scans Android projects for potential bugs, performance, security, usability, accessibility and internationalization issues, and more. It is an IDE-independent analyzer, at the moment integrated with Eclipse and Android Studio.\medskip \\
@@ -439,7 +446,7 @@ Finally, registers are sub-classes of \texttt{IssueRegistry} that usually only o
 Once every component has been implemented, to actually include the Lint check in the list of rules enforced by the tool one must copy the generated JAR file of the library in the \texttt{$\sim$/.android/lint/} directory. Using Gradle in Android Studio, one can write a snippet to automatically copy the JAR after each \textit{install} command.
 
 \subsubsection{Code Structure}
-Given the components listed in the previous section, the code structure of the static lifecycle checks is straightforward. [TODO continue]
+Given the components listed in the previous section, the code structure of the static lifecycle checks is straightforward. TODO continue
 
 \subsection{Evaluation}
 
@@ -447,13 +454,98 @@ Given the components listed in the previous section, the code structure of the s
 
 \section{Dynamic Analysis}
 
-\subsection{Introduction}
-
 \subsection{Lifecycle Test Cases}
+In this section a dynamic approach to lifecycle testing will be presented, as opposed to the static technique described previously. In particular, the idea is to provide to the developer pre-generated test cases that allow to explore the most common lifecycle changes.
 
 \subsection{Design}
+To allow custom actions and checks during the pre-defined lifecycle tests the system uses several callbacks, for example the \textit{PauseCallback} allows the developer to specify some actions and checks before the component is paused, some checks while it is paused and some other actions and checks when the component is resumed again. These callbacks are defined by the developer inside a test case and then used by the system during the actual lifecycle tests in the appropriate moments.\medskip \\
+The pre-generated lifecycle tests will be defined for two frameworks:
+\begin{itemize}
+	\item ActivityTestRule tests: \texttt{ActivityTestRule} objects define an activity to test inside a test case. It is used for
+	\begin{itemize}
+		\item Instrumented unit testing
+		\item Espresso UI testing
+	\end{itemize}
+	\item Robolectric tests: "hybrid" unit testing
+\end{itemize}
+Which cover the most used modern testing mechanisms in Android.\medskip \\
+The defined tests are:
+\begin{itemize}
+	\item Pause: simulates the component being partially hidden, i.e. paused and then resumed. It is useful for example to see if the component correctly frees/stops and reacquires/starts "critical" resources and CPU-intensive operations.
+	\begin{itemize}
+		\item \texttt{onCreate()}
+		\item \texttt{onStart()}
+		\item \texttt{onResume()}
+		\item \textit{Actions and assertions before the pause}
+		\item \texttt{onPause()}
+		\item \textit{Assertions while paused}
+		\item \texttt{onResume()}
+		\item \textit{Actions and assertions after the pause}
+	\end{itemize}
+	\item Stop: simulates the component being completely hidden (in background), i.e. stopped and restarted. The developer can for example check if all resources used by the application are correctly released while the component is in background, to avoid wasting computational power.
+	\begin{itemize}
+		\item \texttt{onCreate()}
+		\item \texttt{onStart()}
+		\item \texttt{onResume()}
+		\item \textit{Actions and assertions before the stop}
+		\item \texttt{onPause()}
+		\item \texttt{onStop()}
+		\item \textit{Assertions while stopped}
+		\item \texttt{onRestart()}
+		\item \texttt{onStart()}
+		\item \texttt{onResume()}
+		\item \textit{Actions and assertions after the stop}
+	\end{itemize}
+	\item Destruction: simulates the component being closed (e.g. back button pressed or the application is killed by the system). In this case two different tests are defined, one where \texttt{onDestroy()} is called and another one where it is not, since in a real application this call is not guaranteed\footnote{https://developer.android.com/reference/android/app/Activity.html\#onDestroy()}. This test can be used for example to see if the component stops all computations and, if needed, stores unsaved data in memory.
+	\begin{itemize}
+		\item \texttt{onCreate()}
+		\item \texttt{onStart()}
+		\item \texttt{onResume()}
+     	\item \textit{Actions and assertions before the destruction}
+		\item \texttt{onPause()}
+		\item \texttt{onStop()}
+		\item $[$\texttt{onDestroy()}$]$
+     	\item \textit{Assertions after the destruction}
+	\end{itemize}
+	\item Recreation: simulates the component being recreated. This can happen for example when a device configuration change happens (e.g. device is rotated) or an application in background is killed by Android to free resources and then restarted. This is usually the most critical lifecycle transition: since a completely new instance of the component is created (with a different reference), all variables that are not passed in the saved instance state \texttt{Bundle} are lost, other components (e.g. \texttt{AsyncTask}) may not be able to commit their results to the new component, etc.  
+	\begin{itemize}
+		\item \texttt{onCreate()}
+		\item \texttt{onStart()}
+		\item \texttt{onResume()}
+     	\item \textit{Actions and assertions before the recreation}
+		\item \texttt{onPause()}
+		\item \texttt{onStop()}
+		\item \texttt{onDestroy()}
+		\item \texttt{onCreate()}
+		\item \texttt{onStart()}
+		\item \texttt{onResume()}
+     	\item \textit{Actions and assertions after the recreation}
+	\end{itemize}
+	The test also provides a way to test the actual contents of the saved instance state \texttt{Bundle} to see if it contains the correct data passed from the old to the new instance of the component.
+	\item Rotation: simulates the device being rotated, from portrait to landscape modes or vice-versa. By default, from the lifecycle point of view this has the same effect of a recreation, but the developer can specify a different behavior changing the \texttt{configChanges} attribute in the application manifest. This test can be useful to see if the component dynamically adapts to the new rotation, e.g. providing a different UI layout.
+	\begin{itemize}
+		\item \texttt{onCreate()}
+		\item \texttt{onStart()}
+		\item \texttt{onResume()}
+		\item \textit{Actions and assertions before the rotation}
+		\item $[$Possible lifecycle changes, by default recreation$]$
+		\item \textit{Actions and assertions after the rotation}
+	\end{itemize}
+\end{itemize}
 
 \subsection{Implementation}
+TODO DIAGRAM HERE
+The system is split in three modules. The reason for this is the Android system of including test libraries: using Gradle, the developer can \textit{testCompile} the libraries used for local tests (i.e. that run on the development computer) and \textit{androidTestCompile} the libraries used for instrumented tests (i.e. that run on real mobile devices or emulators). Since Robolectric is local and ActivityTestRule is instrumented, two distinct modules \texttt{RobolectricLifecycleTesting} and \texttt{ActivityTestRuleLifecycleTesting} allow the developer to correctly include them without creating useless dependencies. The module \texttt{LifecycleTesting} includes the common parts of the other two.\medskip \\
+The \texttt{LifecycleTest} class inside the \texttt{LifecycleTesting} module is the main class of the system. It defines:
+\begin{itemize}
+	\item Abstract methods implemented by the sub-modules that allow to specify the means to control the component lifecycle, according to their structure.
+	\item Abstract methods implemented by the end-developer that allow to pass the callbacks for each lifecycle test.
+	\item The actual tests that use the previous two sets of methods to drive the lifecycle and to perform actions and checks in between.
+\end{itemize}
+Inside the module, several interfaces for the callbacks are also defined. \medskip \\
+The \texttt{RobolectricLifecycleTest} class inside the  \texttt{RobolectricLifecycleTesting} module is the implementation of the lifecycle tests for the Robolectric framework. Besides implementing the methods to drive the component lifecycle using the Robolectric \texttt{ActivityController} class, it also provides the abstract method \texttt{getActivityClass()} to allow the developer to define the activity under test and the utility \texttt{getActivity()} that allows the developer to retrieve the activity during a callback.\medskip \\
+The class for ActivityTestRule tests is provided by the \texttt{ActivityRuleLifecycleTest} class inside the \texttt{ActivityTestRuleLifecycleTesting} module. It implements the lifecycle methods using the Android \texttt{Instrumentation} class and provides the abstract method \texttt{getActivityTestRule()} to allow the developer to define the ActivityTestRule under test.
+
 
 \subsection{Evaluation}
 
@@ -575,7 +667,7 @@ The first type of checks focuses on single events at a time: for example we may 
 
   \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
   
-	\raisebox{-230pt}{\includegraphics[width=400px]{Images/Language/CanHappenOnlyAfter.png}}
+	\raisebox{-230pt}{\includegraphics[width=400px]{Images/Event/Lang/CanHappenOnlyAfter.png}}
 	
 	Note in particular that in the second case the checks succeeds even if no blue event occurs: we are  just saying that blue events \textit{can} happen after an orange one.
 	
@@ -662,7 +754,7 @@ First Order Logic specifications use the counting quantifiers~\cite{Pratt-Hartma
 
   \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
   
-	\raisebox{-280pt}{\includegraphics[width=400px]{Images/Language/MustHappenAfter.png}}
+	\raisebox{-280pt}{\includegraphics[width=400px]{Images/Event/Lang/MustHappenAfter.png}}
 	
 	Note in particular that the third case shows the "exclusively" constraint mentioned before: the check fails because we do not have two blue events after the first orange but before the second one (i.e. the first orange event does \textit{not} match one of the three blue events that follow the second orange event)
 
@@ -798,7 +890,7 @@ These constructs allow to specify the standard logic connectives between one or 
 
   \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
   
-	\raisebox{-105pt}{\includegraphics[width=400px]{Images/Language/AllHold.png}}
+	\raisebox{-105pt}{\includegraphics[width=400px]{Images/Event/Lang/AllHold.png}}
 	
 	
   	\\ \hline
@@ -867,10 +959,23 @@ Succeeds only if both sub-checks fail or both succeed.
 c1 \iff c2
 \end{multline*}
 
-
-
-\section{Design}
-
+\section{Design}\label{event_design}
+To implement the event-based testing approach described so far we need the following main components:
+\begin{itemize}
+	\item Events: objects that represent events in the application
+	\item Event Generators: structures that actually generate the events whenever something happens in the application
+	\item Checks: ways to specify the consistency rules defined in the previous section
+	\item Results: the outcomes of the checks
+	\item Event Monitor: the main interface of the system, receives the events, applies the checks and produces the results
+\end{itemize}
+The following UML class diagram shows an abstract representation of the system:\\
+TODO PLACE UML HERE\\
+The \textit{EventMonitor} offers methods to add one or more \textit{EventGenerator} objects to define the event stream, to add one or more \textit{Check} objects to be verified and handles the \textit{Result} objects in some way (e.g. makes a test case fail if the \textit{Result} is a failure).\medskip \\
+Each \textit{Check} contains the logic of a consistency check: it will receive each \textit{Event} of the stream in order and act accordingly. A \textit{Check} has the possibility to short-circuit its behavior (i.e. interrupt the stream of events if the consistency check succeeds or fails before the end of the sequence). In any case, when it short-circuits or the stream comes to an end, the \textit{Check} produces one and only one \textit{Result} object.\medskip \\
+Each \textit{Result} contains an \textit{Outcome} and a message describing it. In particular, an \textit{Outcome} can be a \textit{Success}, a \textit{Failure} and a \textit{Warning}. A \textit{Warning} outcome has not been included in the formal specifications of the checks in the previous section for simplicity: it's meaning is that the \textit{Check} succeeded with some minor error or in a particular situations (for example a check that specifies that an event A always generates exactly one event B may return \textit{Warning} if no event A has been found in the sequence).\medskip \\
+A \textit{Descriptor} allows to specify a \textit{Check}. It describes one or more events of the stream and provides some methods to express a condition on those events. In particular, \textit{SingleEvent} describes a single event of a certain type at a time, \textit{SetOfEvents} describes a set of events of a certain type at a time and \textit{AllEvents} describes all the events of a certain type in the whole stream. To determine the type of the events identified by the \textit{Descriptor}, a \textit{Matcher} object is used.\medskip \\
+The cardinality of the descriptor \textit{SetOfEvents} is defined by a \textit{Quantifier} that has an integer values as input. A quantifier can be\textit{Exactly}, \textit{AtMost} or \textit{AtLeast}.\medskip \\
+Finally, a \textit{CheckConnective} allows to transform one or more \textit{Check} objects into a single \textit{Check}, i.e. it specifies one of the standard logic connectives \textit{Not}, \textit{And}, \textit{Or}, \textit{SingleImplication} and \textit{DoubleImplication}.
 
 \section{Implementation}
 
@@ -911,7 +1016,7 @@ In addition to implementing all functionalities of ReactiveX paradigm (Observabl
 \begin{itemize}
 	\item Lightweight: zero dependencies and single small JAR to contain the whole library
 	\item Polyglot: supports Java 6 or higher and JVM-based languages such as Groovy, Clojure, JRuby, Kotlin and Scala
-	\item Composable: several RxJava Libraries are available to developers to manage  common use cases
+	\item Composable: several RxJava Libraries are available to developers to manage common use cases
 \end{itemize} \bigskip
 RxAndroid~\cite{RxAndroid} is a RxJava module that provides specific bindings for the Android platform, for example to easily specify the main (UI) thread as the observing thread or, more in general, a custom Looper. RxAndroid can in turn be extended by other modules, some of which are listed in the next section.
 
@@ -934,6 +1039,40 @@ Several modules allow Android developers to observe many events inside an applic
 And many others.\bigskip \\
 The utility module RxLifecycle~\cite{RxLifecycle} allows to bind the listed observables to the lifecycle of an Activity or a Fragment to avoid leaks. For example, without any binding to the lifecycle, an observable that emits text change events on a TextView never ends (i.e. never calls \texttt{onCompleted()} or \texttt{onError()}) because it has no way of understanding when the text will stop changing. In that situation the observable will run even after the Activity has been removed and, keeping its reference, won't allow the garbage collector to delete the instance (memory leak). Thanks to RxLifecycle the developer can bind the observable until a lifecycle event occurs (e.g. activity is stopped), allowing it to terminate correctly.
 
+\subsection{The System}
+The structure of the actual implementation of event-based testing is similar to what has been designed in section \ref{event_design}. A class diagram of the system will be proposed, followed by more detailed explanations of the main components.\medskip \\
+
+[TODO PUT UML DIAGRAM HERE]
+
+Before beginning, note that many classes like the descriptors have a private constructor and a static method to create an instance. Similarly to the standard way of building assertions in JUnit, this is just syntactic sugar that allows to statically import the methods and to avoid writing the \texttt{new} keyword.
+
+
+\subsection{Event Monitor}
+The \texttt{EventMonitor} is a singleton class that is set up via the \texttt{initialize()} method. Once this is done, the developer can add observables via \texttt{observe(Observable)} to build the event stream and checks via \texttt{checkThat(String, Check)}.\medskip \\
+At this point a call to \texttt{startVerification(Subscriber<Event>, Subscriber<Result>)} is performed to start the validation process on the defined stream: the two subscribers are used by the developer to receive all the events of the stream in order and all the results of the checks respectively. The class provides some static methods to get simple pre-generated subscribers for this purpose, e.g. passing \texttt{EventMonitor.getAssertionErrorResultsSubscriber()} as the second parameter the app will crash (or make the test case fail) if a failure result is found.\medskip \\
+When the developer calls \texttt{stopVerification()} the stream will be interrupted and all the remaining check results will be generated.\medskip \\
+Finally, the class also provides the utility method \texttt{fireCustomEvent(Event)} that allows to directly generate an \texttt{Event} without creating an \texttt{Observable}.\medskip \\
+Note that the \texttt{EventMonitor} observes the events on the thread specified by each observable (usually the main thread) and runs the checks in a separate thread to avoid possible slowdowns of the UI thread.\medskip \\
+The \texttt{EventMonitor} can be used as
+\begin{itemize}
+	\item runtime monitor during the manual debugging phase of the application development: just like the standard assertions placed in production code, the developer can use the monitor for example inside an activity to log all events and the results of the checks
+	\item testing mechanism: the developer can start the monitor at the beginning of a test and add some specific checks, then execute the test actions as usual and finally stop the monitor at the end. The monitor will work as a standard assertion mechanism, making the test fail in case a consistency check is not successful. Note that this mechanism, since it's not framework-specific, can be used for any type of test, from unit to UI, and with any library, provided that it is able to observe all the required events in the application.
+\end{itemize}
+
+\subsection{Event Generators}
+As introduced, the event generators are implemented as \texttt{Observable} objects provided by RxJava. Each observable added to the \texttt{EventMonitor} will build the event stream: in particular, all the observables are combined using the RxJava operator \texttt{merge()}, which transforms a set of observables into a single one that emits all the events in their respective order.\medskip \\
+The events generated by these observables are subclasses of \texttt{Event}, of which just two have been reported in the diagram since there could be hundreds of them. An \texttt{Event} class can also provide some static methods to create one or more matchers.
+
+\subsection{Checks}
+A \texttt{Check} implements is logic using a \texttt{CheckSubscriber}, a subclass of the RxJava \texttt{Subscriber}. This component receives all the events of the stream via \texttt{onNext(Event)} and performs some internal computation, possibly short-circuiting the validation calling \texttt{endCheck()}. The callback \texttt{getFinalResult()} will be called to return the unique \texttt{Result} of the check.\medskip \\
+The \texttt{EventMonitor} applies a check on the event stream by calling the operator \texttt{EnforceCheck} on it, which is in charge of transforming a stream of \texttt{Event} objects into a stream containing a single \texttt{Result}.\medskip \\
+Connectives between checks are implementations of \texttt{CheckConnective}, which is in turn a subclass of \texttt{Check}. Each of them implements a \texttt{ResultsSubscriber} that, analogously to a \texttt{CheckSubscriber}, receives the results of its terms, performs some computation and then produces a single \texttt{Result} as output. \texttt{Not}, \texttt{AllHold} and \texttt{AnyHolds} (implementations of the logic \textit{negation}, \textit{and} and \textit{or} respectively) provide static methods as constructors (e.g. \texttt{allHold(check1, check2, check3)}), while \texttt{IfThen} and \texttt{IfAndOnlyIf} (implementations of single and double implication) are built starting from the \texttt{ProvidedThat} and \texttt{IsSatisfied} classes respectively (e.g. \texttt{providedThat(check1).then(check2)}).
+
+\subsection{Descriptors}
+The descriptors are subclasses of \texttt{AbstractEventDescriptor}. \texttt{AnEventThat} (single event) and \texttt{AllEventsWhereEach} (all the events in the whole stream) provide static constructors, while \texttt{EventsWhereEach} descriptors (sets of events) do not provide one because they are built starting from a quantifier, e.g. \texttt{exactly(10).eventsWhereEach(...)}.\medskip \\
+Quantifiers are subclasses of \texttt{AbstractQuantifier}. Each of them uses an internal counter and overrides several methods like \texttt{isConditionMet()} and \texttt{canStopCurrentComputation()} to implement its logic. All of them have a private constructor and a static method like the descriptors.\medskip \\
+The matchers that describe the type of events identified by each descriptor are implemented using the external library JavaHamcrest~\cite{Hamcrest}, a well known way to describe objects. The library provides several matchers on the most common objects (like Strings, e.g. \texttt{isEmptyString()}, \texttt{startsWith(String)}, etc.), some connectives to compose matchers (e.g. \texttt{allOf(Matcher...)}) and the means to implement custom matchers, which have been used to define matchers for the events.
+TODO ADD EXIST
 
 
 
@@ -958,8 +1097,8 @@ The utility module RxLifecycle~\cite{RxLifecycle} allows to bind the listed obse
 %.................................. REFERENCES ................................%
 %..............................................................................%
 
-\bibliographystyle{plain}
-\bibliography{Bib/DEvA,Bib/CAFA,Bib/EventRacer,Bib/JUnit,Bib/Lint,Bib/Mockito,Bib/Oracles,Bib/ReactiveLocation,Bib/ReactiveNetwork,Bib/ReactiveSensors,Bib/Retrofit,Bib/Robolectric,Bib/RxAndroid,Bib/RxBinding,Bib/RxBroadcast,Bib/RxFileObserver,Bib/RxGoogleMaps,Bib/RxJava,Bib/RxLifecycle,Bib/RxPermissions,Bib/RxPreferences,Bib/RxWear,Bib/StorIO,Bib/THOR,Bib/CountingLogic} 
+\bibliographystyle{unsrt}
+\bibliography{Bib/DEvA,Bib/CAFA,Bib/EventRacer,Bib/JUnit,Bib/Lint,Bib/Mockito,Bib/Oracles,Bib/ReactiveLocation,Bib/ReactiveNetwork,Bib/ReactiveSensors,Bib/Retrofit,Bib/Robolectric,Bib/RxAndroid,Bib/RxBinding,Bib/RxBroadcast,Bib/RxFileObserver,Bib/RxGoogleMaps,Bib/RxJava,Bib/RxLifecycle,Bib/RxPermissions,Bib/RxPreferences,Bib/RxWear,Bib/StorIO,Bib/THOR,Bib/CountingLogic,Bib/Hamcrest} 
 
 \end{document}
 
