@@ -354,7 +354,7 @@ Examples of Android components that may be checked with static analysis are:
 	\begin{itemize}
 		\item Release: the official documentation states that a Broadcast Receiver, if registered with an Activity context (as it is usually the case), should ideally be unregistered before the Activity is done being destroyed, but if it not so the system will clean up the leaked registration anyway and only log an error. In case the receiver is registered using the Application context, however, it will be never unregistered by the system, so missing a call to the unregister method may lead to serious leaks\footnote{https://developer.android.com/reference/android/content/Context.html\#getApplicationContext()}. Moreover, it is reported that the developer should not unregister during an Activity \texttt{onSaveInstanceState()} method, because it won't be called if the user moves back in the history stack\footnote{https://developer.android.com/reference/android/content/BroadcastReceiver.html}.
 		\item Best Practices: the only official recommendation on how to handle a Broadcast Receiver in accordance to the lifecycle of the Activity/Fragment that uses it is to unregister it during \texttt{onPause()} if it is registered during \texttt{onResume()}\footnote{https://developer.android.com/reference/android/content/BroadcastReceiver.html}. The common usage of the receiver is to register during \texttt{onResume()} or \texttt{onStart()} and to unregister during \texttt{onPause()} or \texttt{onStop()} respectively.
-		\item Double Instantiation: although not reported in the documentation, registering twice the same Broadcast Receiver leads to receiving each event twice and so it is usually to be avoided.
+		\item Double Instantiation: registering twice a BroadcastReceiver with the same parameters does not create any correctness issue and the complexity of the method is negligible, so there's no need to check double instantiation for this component. However, if the BroadcastReceiver is unregistered twice the system throws an \texttt{IllegalArgumentException}, so it might be useful to warn the developer in advance if two calls are detected.
 	\end{itemize}
 	\item Google API Client: the \texttt{GoogleApiClient} class allows to connect to the Google Play services for several APIs, like Google+, Google Drive, wearables, etc. The developer can either manage the connection manually or leave it to the system. The following specifications are of course valid for the former case.
 	\begin{itemize}
@@ -667,7 +667,7 @@ The first type of checks focuses on single events at a time: for example we may 
 
   \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
   
-	\raisebox{-230pt}{\includegraphics[width=400px]{Images/Event/Lang/CanHappenOnlyAfter.png}}
+	\raisebox{-230pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide1.PNG}}
 	
 	Note in particular that in the second case the checks succeeds even if no blue event occurs: we are  just saying that blue events \textit{can} happen after an orange one.
 	
@@ -676,6 +676,7 @@ The first type of checks focuses on single events at a time: for example we may 
   \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
   
   	\begin{lstlisting}
+	/* Check race condition with maps */
 	anEventThat(isMarkerPlacement())
 		.canHappenOnlyAfter(anEventThat(isMapReady()))
 	\end{lstlisting}
@@ -688,28 +689,107 @@ The first type of checks focuses on single events at a time: for example we may 
 
 \subsubsection{Can Happen Only Before}
 
-\begin{lstlisting}
-anEventThat(m1).canHappenOnlyBefore(anEventThat(m2))
-\end{lstlisting}
+\begin{center}
+\bgroup
+\def\arraystretch{1.5}%
+\begin{longtable}{ | m{0.3cm} | m{15cm} | }
+  \hline
+  
+  \rotatebox[origin=c]{90}{\textbf{ Structure }} & 
+  
+  	\begin{lstlisting}
+	anEventThat(m1).canHappenOnlyBefore(anEventThat(m2))
+	\end{lstlisting}
+	
+  	\\ \hline
+  	 
+  \rotatebox[origin=c]{90}{\textbf{ Description }} & 
+  
+  	Checks that the events that match \texttt{m1} happen only before any event that matches \texttt{m2}, i.e. there cannot be an event that matches \texttt{m1} after the last event that matches \texttt{m2}.
+	
+  	\\ \hline
 
-Checks that the events that match \texttt{m1} happen only before any event that matches \texttt{m2}, i.e. there cannot be an event that matches \texttt{m1} after the last event that matches \texttt{m2}. 
+  \rotatebox[origin=c]{90}{\textbf{ FOL }} & 
+  
+  	\begin{multline*}
+	\forall e1 \bigg( match(e1, m1) \Rightarrow \exists e2 \Big( match(e2, m2) \land before(e1, e2) \Big) \bigg)
+	\end{multline*}
+	
+  	\\ \hline
 
-\begin{multline*}
-\forall e1 \bigg( match(e1, m1) \Rightarrow \exists e2 \Big( match(e2, m2) \land before(e1, e2) \Big) \bigg)
-\end{multline*}
+  \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
+  
+	\raisebox{-230pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide2.PNG}}
+	
+	
+  	\\ \hline
+  	
+  \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
+  
+  	\begin{lstlisting}
+	/* Can change form input only before it is submitted */
+	anEventThat(isTextChangeFrom(usernameTextView))
+		.canHappenOnlyBefore(anEventThat(isSubmitForm()))
+	\end{lstlisting}
+	
+  	\\ \hline  	
+  	 
+\end{longtable}
+\egroup
+\end{center}
 
 \subsubsection{Can Happen Only Between}
 
-\begin{lstlisting}
-anEventThat(m1).canHappenOnlyBetween(anEventThat(m2), anEventThat(m3))
-\end{lstlisting}
+\begin{center}
+\bgroup
+\def\arraystretch{1.5}%
+\begin{longtable}{ | m{0.3cm} | m{15cm} | }
+  \hline
+  
+  \rotatebox[origin=c]{90}{\textbf{ Structure }} & 
+  
+  	\begin{lstlisting}
+	anEventThat(m1).canHappenOnlyBetween(anEventThat(m2), anEventThat(m3))
+	\end{lstlisting}
+	
+  	\\ \hline
+  	 
+  \rotatebox[origin=c]{90}{\textbf{ Description }} & 
+  
+  	Checks that the events that match \texttt{m1} happen only between any pair of events that match \texttt{m2} and \texttt{m3} respectively, i.e. there cannot be an event that matches \texttt{m1} before the first event that matches \texttt{m2} or after the last event that matches \texttt{m3}. 
+	
+  	\\ \hline
 
-Checks that the events that match \texttt{m1} happen only between any pair of events that match \texttt{m2} and \texttt{m3} respectively, i.e. there cannot be an event that matches \texttt{m1} before the first event that matches \texttt{m2} or after the last event that matches \texttt{m3}. 
+  \rotatebox[origin=c]{90}{\textbf{ FOL }} & 
+  
+  	\begin{multline*}
+	\forall e1 \bigg( match(e1, m1) \Rightarrow \exists e2, e3 \Big( match(e2, m2) \land match(e3, m3) \\ \land between(e2, e1, e3) \Big) \bigg)
+	\end{multline*}
+	
+  	\\ \hline
 
-\begin{multline*}
-\forall e1 \bigg( match(e1, m1) \Rightarrow \exists e2, e3 \Big( match(e2, m2) \land match(e3, m3) \\ \land between(e2, e1, e3) \Big) \bigg)
-\end{multline*}
-
+  \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
+  
+	\raisebox{-230pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide3.PNG}}
+	
+	
+  	\\ \hline
+  	
+  \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
+  
+  	\begin{lstlisting}
+	/* Can send broadcast only if the the service is working */
+	anEventThat(isSendBroadcast())
+		.canHappenOnlyBetween(
+			anEventThat(isServiceStart(mainService)),
+			anEventThat(isServiceStop(mainService)))
+	\end{lstlisting}
+	
+  	\\ \hline  	
+  	 
+\end{longtable}
+\egroup
+\end{center}
 
 \subsection{Checks on Sets of Events}
 
@@ -754,7 +834,7 @@ First Order Logic specifications use the counting quantifiers~\cite{Pratt-Hartma
 
   \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
   
-	\raisebox{-280pt}{\includegraphics[width=400px]{Images/Event/Lang/MustHappenAfter.png}}
+	\raisebox{-280pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide4.PNG}}
 	
 	Note in particular that the third case shows the "exclusively" constraint mentioned before: the check fails because we do not have two blue events after the first orange but before the second one (i.e. the first orange event does \textit{not} match one of the three blue events that follow the second orange event)
 
@@ -763,6 +843,7 @@ First Order Logic specifications use the counting quantifiers~\cite{Pratt-Hartma
   \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
   
   	\begin{lstlisting}
+	/* If a location change happens, the text view must be updated exactly once */	
 	exactly(1).eventsWhereEach(isTextChangeFrom(locationTextView))
 		.mustHappenAfter(anEventThat(isLocationChange()))
 	\end{lstlisting}
@@ -775,27 +856,107 @@ First Order Logic specifications use the counting quantifiers~\cite{Pratt-Hartma
 
 \subsubsection{Must Happen Before}
 
-\begin{lstlisting}
-exactly(n).eventsWhereEach(m1).mustHappenBefore(anEventThat(m2))
-\end{lstlisting}
+\begin{center}
+\bgroup
+\def\arraystretch{1.5}%
+\begin{longtable}{ | m{0.3cm} | m{15cm} | }
+  \hline
+  
+  \rotatebox[origin=c]{90}{\textbf{ Structure }} & 
+  
+  	\begin{lstlisting}
+	exactly(n).eventsWhereEach(m1).mustHappenBefore(anEventThat(m2))
+	\end{lstlisting}
+	
+  	\\ \hline
+  	 
+  \rotatebox[origin=c]{90}{\textbf{ Description }} & 
+  
+  	Checks that exactly \texttt{n} events that match \texttt{m1} happen exclusively before every event that matches \texttt{m2}. "Exclusively" means that the sequence of \texttt{n} events must be after the previous (if any) event that matches \texttt{m2}.
+	
+  	\\ \hline
 
-Checks that exactly \texttt{n} events that match \texttt{m1} happen exclusively before every event that matches \texttt{m2}. "Exclusively" means that the sequence of \texttt{n} events must be after the previous (if any) event that matches \texttt{m2}.
+  \rotatebox[origin=c]{90}{\textbf{ FOL }} & 
+  
+  	\begin{multline*}
+	\forall e2 \Bigg( match(e2, m2) \Rightarrow \exists_{=n} e1 \bigg( match(e1, m1) \land before(e1, e2) \\ \land \neg \exists e2' \Big( match(e2', m2) \land between(e1, e2', e2) \Big) \bigg) \Bigg)
+	\end{multline*}
+	
+  	\\ \hline
 
-\begin{multline*}
-\forall e2 \Bigg( match(e2, m2) \Rightarrow \exists_{=n} e1 \bigg( match(e1, m1) \land before(e1, e2) \\ \land \neg \exists e2' \Big( match(e2', m2) \land between(e1, e2', e2) \Big) \bigg) \Bigg)
-\end{multline*}
+  \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
+  
+	\raisebox{-280pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide5.PNG}}
+	
+	
+  	\\ \hline
+  	
+  \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
+  
+  	\begin{lstlisting}
+	/* To setup the list of data the system must perform exactly 3 database queries */
+	exactly(3).eventsWhereEach(isDatabaseQuery())
+		.mustHappenBefore(anEventThat(isListSetup()))
+	\end{lstlisting}
+	
+  	\\ \hline  	
+  	 
+\end{longtable}
+\egroup
+\end{center}
 
 \subsubsection{Must Happen Between}
 
-\begin{lstlisting}
-exactly(n).eventsWhereEach(m1).mustHappenBetween(AnEventThat(m2), AnEventThat(m3))
-\end{lstlisting}
+\begin{center}
+\bgroup
+\def\arraystretch{1.5}%
+\begin{longtable}{ | m{0.3cm} | m{15cm} | }
+  \hline
+  
+  \rotatebox[origin=c]{90}{\textbf{ Structure }} & 
+  
+  	\begin{lstlisting}
+	exactly(n).eventsWhereEach(m1).mustHappenBetween(AnEventThat(m2), AnEventThat(m3))
+	\end{lstlisting}
+	
+  	\\ \hline
+  	 
+  \rotatebox[origin=c]{90}{\textbf{ Description }} & 
+  
+  	Checks that exactly \texttt{n} events that match \texttt{m1} happen between every pair of events that match \texttt{m2} and \texttt{m3} respectively.
+	
+  	\\ \hline
 
-Checks that exactly \texttt{n} events that match \texttt{m1} happen exclusively between every pair of events that match \texttt{m2} and \texttt{m3} respectively. "Exclusively" means that the sequence of \texttt{n} events cannot be "shared" among overlapping pairs.
+  \rotatebox[origin=c]{90}{\textbf{ FOL }} & 
+  
+  	\begin{multline*}
+	\forall e2 \Bigg( match(e2, m2) \Rightarrow \exists e3 \bigg( \Big( match(e3, m3) \land before(e2, e3) \\ \land \neg \exists e2', e3' \big( match(e2', m2) \land between(e2, e2', e3) \lor match(e3', m3) \\ \land between(e2, e3', e3) \big) \Big) \iff \exists_{=n} e1 \Big( match(e1, m1) \land between(e2, e1, e3 \Big) \bigg) \Bigg)
+	\end{multline*}
+	
+  	\\ \hline
 
-\begin{multline*}
-\forall e2 \Bigg( match(e2, m2) \Rightarrow \exists e3 \bigg( \Big( match(e3, m3) \land before(e2, e3) \\ \land \neg \exists e2', e3' \big( match(e2', m2) \land between(e2, e2', e3) \lor match(e3', m3) \\ \land between(e2, e3', e3) \big) \Big) \iff \exists_{=n} e1 \Big( match(e1, m1) \land between(e2, e1, e3 \Big) \bigg) \Bigg)
-\end{multline*}
+  \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
+  
+	\raisebox{-190pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide6.PNG}}
+	
+	
+  	\\ \hline
+  	
+  \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
+  
+  	\begin{lstlisting}
+	/* During the execution of the activity the text is changed exactly four times */
+	exactly(4).eventsWhereEach(isTextChangeFrom(myTextView))
+		.mustHappenBetween(
+			anEventThat(isActivityLifecycleEvent("onResume")),
+			anEventThat(isActivityLifecycleEvent("onPause")))
+	\end{lstlisting}
+	
+  	\\ \hline  	
+  	 
+\end{longtable}
+\egroup
+\end{center}
 
 
 \subsection{Checks on the Whole Stream}
@@ -804,53 +965,222 @@ The third type of checks concerns the entire stream of events: they allow for ex
 
 \subsubsection{Match In Order}
 
-\begin{lstlisting}
-allEventsWhereEach(m).matchInOrder(m$_1$, m$_2$, ... , m$_n$)
-\end{lstlisting}
+\begin{center}
+\bgroup
+\def\arraystretch{1.5}%
+\begin{longtable}{ | m{0.3cm} | m{15cm} | }
+  \hline
+  
+  \rotatebox[origin=c]{90}{\textbf{ Structure }} & 
+  
+  	\begin{lstlisting}[mathescape]
+	allEventsWhereEach(m).matchInOrder(m$_1$, m$_2$, ... , m$_n$)
+	\end{lstlisting}
+	
+  	\\ \hline
+  	 
+  \rotatebox[origin=c]{90}{\textbf{ Description }} & 
+  
+  	Checks that \textit{all} the events that match \texttt{m} match in order the given matchers.
+	
+  	\\ \hline
 
-Checks that \textit{all} the events (in the whole sequence) that match \texttt{m} match in order the given matchers.
-
-\begin{multline*}
-\forall e \bigg( match(e, m) \Rightarrow \exists i \Big( indexOf(e, m, i) \land match(e, m_i) \Big) \bigg)\\\\
+  \rotatebox[origin=c]{90}{\textbf{ FOL }} & 
+  
+  	\begin{multline*}
+	\forall e \bigg( match(e, m) \Rightarrow \exists i \Big( indexOf(e, m, i) \land match(e, m_i) \Big) \bigg)\\\\
 indexOf(e, m, i) \equiv \exists_{=i} e' \Big( match(e', m) \land before(e', e) \Big)
-\end{multline*}
+	\end{multline*}
+	
+  	\\ \hline
+
+  \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
+  
+	\raisebox{-230pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide7.PNG}}
+	
+	Note in particular the last case: the check implicitly states that the events must be exactly 3 and they must satisfy the three matchers.	If the third one is missing, the check fails.
+	
+  	\\ \hline
+  	
+  \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
+  
+  	\begin{lstlisting}
+	/* Defines the only valid fragment backstack changes sequence */	
+	allEventsWhereEach(isFragmentBackstackChange())
+		.matchInOrder(
+			isFragmentBackstackPush(mainFragment),
+			isFragmentBackstackPush(languageFragment),
+			isFragmentBackstackPush(gameFragment),
+			isFragmentBackstackPop(mainFragment))
+	\end{lstlisting}
+	
+  	\\ \hline  	
+  	 
+\end{longtable}
+\egroup
+\end{center}
 
 \subsubsection{Are Ordered}
 
-\begin{lstlisting}
-allEventsWhereEach(m).areOrdered(f)
-\end{lstlisting}
+\begin{center}
+\bgroup
+\def\arraystretch{1.5}%
+\begin{longtable}{ | m{0.3cm} | m{15cm} | }
+  \hline
+  
+  \rotatebox[origin=c]{90}{\textbf{ Structure }} & 
+  
+  	\begin{lstlisting}
+	allEventsWhereEach(m).areOrdered(f)
+	\end{lstlisting}
+	
+  	\\ \hline
+  	 
+  \rotatebox[origin=c]{90}{\textbf{ Description }} & 
+  
+  	Checks that \textit{all} the events that match \texttt{m} are in the order defined by the comparator function \textit{f} (receives two events and returns an integer $<$ 0 if the first is less than the second, 0 if they are equal, and $>$ 0 if the first is greater than the second).
+	
+  	\\ \hline
 
-Checks that \textit{all} the events (in the whole sequence) that match \texttt{m} are in the order defined by the comparator function \textit{f} (receives two events and returns an integer $<$ 0 if the first is less than the second, 0 if they are equal, and $>$ 0 if the first is greater than the second).
-
-\begin{multline*}
-\forall e, e' \bigg( match(e, m) \land match(e', m) \land before(e, e') \land\\ \neg \exists e'' \Big( match(e'', m) \land between(e, e'', e') \Big) \Rightarrow ordered(f, e, e') \bigg)\\\\
+  \rotatebox[origin=c]{90}{\textbf{ FOL }} & 
+  
+  	\begin{multline*}
+	\forall e, e' \bigg( match(e, m) \land match(e', m) \land before(e, e') \land\\ \neg \exists e'' \Big( match(e'', m) \land between(e, e'', e') \Big) \Rightarrow ordered(f, e, e') \bigg)\\\\
 ordered(com, e1, e2) \equiv \bigg( \Big( com<0 \Rightarrow before(e1, e2) \Big) \lor\\ \Big( com=0 \Rightarrow before(e1, e2) \lor before(e2, e1) \Big) \lor\\ \Big( com>0 \Rightarrow before(e2, e1) \Big) \bigg)
-\end{multline*}
+	\end{multline*}
+	
+  	\\ \hline
+
+  \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
+  
+	\raisebox{-160pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide8.PNG}}
+	
+	
+  	\\ \hline
+  	
+  \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
+  
+  	\begin{lstlisting}
+	/* The text in the countdown is updated in the correct (inverse) order */
+	allEventsWhereEach(isTextChangeFrom(countdownView))
+		.areOrdered(new Comparator<Event>()
+					{
+						@Override
+						public int compare(Event lhs, Event rhs)
+						{
+							String t1 = ((TextChangeEvent) lhs).getText();
+							String t2 = ((TextChangeEvent) rhs).getText();
+							return Integer.compare(Integer.valueOf(t2), Integer.valueOf(t1));
+						}
+					}));
+	\end{lstlisting}
+	
+  	\\ \hline  	
+  	 
+\end{longtable}
+\egroup
+\end{center}
 
 \subsubsection{Exists An Event}
 
-\begin{lstlisting}
-existsAnEventThat(m)
-\end{lstlisting}
+\begin{center}
+\bgroup
+\def\arraystretch{1.5}%
+\begin{longtable}{ | m{0.3cm} | m{15cm} | }
+  \hline
+  
+  \rotatebox[origin=c]{90}{\textbf{ Structure }} & 
+  
+  	\begin{lstlisting}
+	existsAnEventThat(m)
+	\end{lstlisting}
+	
+  	\\ \hline
+  	 
+  \rotatebox[origin=c]{90}{\textbf{ Description }} & 
+  
+  	Checks that at least one event that matches the matcher \texttt{m} exists anywhere in the sequence.
+	
+  	\\ \hline
 
-Checks that at least one event that matches the matcher \texttt{m} exists anywhere in the sequence.
+  \rotatebox[origin=c]{90}{\textbf{ FOL }} & 
+  
+  	\begin{multline*}
+	\exists e \Big( match(e, m) \Big)
+	\end{multline*}
+	
+  	\\ \hline
 
-\begin{multline*}
-\exists e \Big( match(e, m) \Big)
-\end{multline*}
+  \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
+  
+	\raisebox{-170pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide9.PNG}}
+	
+	
+  	\\ \hline
+  	
+  \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
+  
+  	\begin{lstlisting}
+	/* The DB must be opened sooner or later during an execution */
+	existsAnEventThat(isOpenDatabase())
+	\end{lstlisting}
+	
+  	\\ \hline  	
+  	 
+\end{longtable}
+\egroup
+\end{center}
 
 \subsubsection{Exist Events}
 
-\begin{lstlisting}
-exist(exactly(n)).eventsWhereEach(m)
-\end{lstlisting}
+\begin{center}
+\bgroup
+\def\arraystretch{1.5}%
+\begin{longtable}{ | m{0.3cm} | m{15cm} | }
+  \hline
+  
+  \rotatebox[origin=c]{90}{\textbf{ Structure }} & 
+  
+  	\begin{lstlisting}
+	exist(exactly(n)).eventsWhereEach(m)
+	\end{lstlisting}
+	
+  	\\ \hline
+  	 
+  \rotatebox[origin=c]{90}{\textbf{ Description }} & 
+  
+  	Checks that \textit{all} the events that match \texttt{m} are exactly \texttt{n}.
+	
+  	\\ \hline
 
-Checks that \textit{all} the events (in the whole sequence) that match \texttt{m} are exactly \texttt{n}.
+  \rotatebox[origin=c]{90}{\textbf{ FOL }} & 
+  
+  	\begin{multline*}
+	\exists_{=n} e \Big( match(e, m) \Big)
+	\end{multline*}
+	
+  	\\ \hline
 
-\begin{multline*}
-\exists_{=n} e \Big( match(e, m) \Big)
-\end{multline*}
+  \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
+  
+	\raisebox{-170pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide10.PNG}}
+	
+	
+  	\\ \hline
+  	
+  \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
+  
+  	\begin{lstlisting}
+	/* In this execution the system sends exactly 10 broadcasts */
+	exist(exactly(10))
+		.eventsWhereEach(isSendBroadcast())
+	\end{lstlisting}
+	
+  	\\ \hline  	
+  	 
+\end{longtable}
+\egroup
+\end{center}
 
 In the same way seen in the previous section, the checks for "at most" and "at least" can be derived by analogy.
 
@@ -890,7 +1220,7 @@ These constructs allow to specify the standard logic connectives between one or 
 
   \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
   
-	\raisebox{-105pt}{\includegraphics[width=400px]{Images/Event/Lang/AllHold.png}}
+	\raisebox{-105pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide11.png}}
 	
 	
   	\\ \hline
@@ -898,11 +1228,12 @@ These constructs allow to specify the standard logic connectives between one or 
   \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
   
   	\begin{lstlisting}
+	/* The service must only be started after the button is clicked */
 	allHold(
-		exactly(1).eventsWhereEach(isDownloadImage())
-			.mustHappenAfter(anEventThat(isClickOn(downloadButton))),
-		anEventThat(isEnlargeImage())
-			.canHappenOnlyAfter(anEventThat(isDownloadImage)))
+		anEventThat(isStartService())
+			.canHappenOnlyAfter(isClickOn(startButton)),
+		exactly(1).eventsWhereEach(isStartService())
+			.mustHappenAfter(isClickOn(startButton)))
 	\end{lstlisting}
 	
   	\\ \hline  	
@@ -913,51 +1244,216 @@ These constructs allow to specify the standard logic connectives between one or 
 
 \subsubsection{Or}
 
-\begin{lstlisting}
-anyHolds(c1, c2,...)
-\end{lstlisting}
+\begin{center}
+\bgroup
+\def\arraystretch{1.5}%
+\begin{longtable}{ | m{0.3cm} | m{15cm} | }
+  \hline
+  
+  \rotatebox[origin=c]{90}{\textbf{ Structure }} & 
+  
+  	\begin{lstlisting}
+	anyHolds(c1, c2,...)
+	\end{lstlisting}
+	
+  	\\ \hline
+  	 
+  \rotatebox[origin=c]{90}{\textbf{ Description }} & 
+  
+  	At least one sub-check must succeed.
+	
+  	\\ \hline
 
-At least one sub-check must succeed.
+  \rotatebox[origin=c]{90}{\textbf{ FOL }} & 
+  
+  	\begin{multline*}
+	c1 \lor c2 \lor ...
+	\end{multline*}
+	
+  	\\ \hline
 
-\begin{multline*}
-c1 \lor c2 \lor ...
-\end{multline*}
+  \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
+  
+	\raisebox{-105pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide12.PNG}}
+	
+	
+  	\\ \hline
+  	
+  \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
+  
+  	\begin{lstlisting}
+	/* Either succeed or fail download (no situations where the user is not notified) */		
+	anyHolds(
+		exist(exactly(1))
+			.eventsWhereEach(isDownloadSuccess()),
+		exist(exactly(1))
+			.eventsWhereEach(isDownloadError()));
+	\end{lstlisting}
+	
+  	\\ \hline  	
+  	 
+\end{longtable}
+\egroup
+\end{center}
 
 \subsubsection{Not}
 
-\begin{lstlisting}
-notTrueThat(c)
-\end{lstlisting}
+\begin{center}
+\bgroup
+\def\arraystretch{1.5}%
+\begin{longtable}{ | m{0.3cm} | m{15cm} | }
+  \hline
+  
+  \rotatebox[origin=c]{90}{\textbf{ Structure }} & 
+  
+  	\begin{lstlisting}
+	isNotSatisfied(c)
+	\end{lstlisting}
+	
+  	\\ \hline
+  	 
+  \rotatebox[origin=c]{90}{\textbf{ Description }} & 
+  
+  	Inverts the outcome of the sub-check.
+	
+  	\\ \hline
 
-Inverts the outcome of the sub-check.
+  \rotatebox[origin=c]{90}{\textbf{ FOL }} & 
+  
+  	\begin{multline*}
+	\neg c
+	\end{multline*}
+	
+  	\\ \hline
 
-\begin{multline*}
-\neg c
-\end{multline*}
+  \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
+  
+	\raisebox{-70pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide13.PNG}}
+	
+	
+  	\\ \hline
+  	
+  \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
+  
+  	\begin{lstlisting}
+	/* In this execution the email draft cannot be saved */		
+	isNotSatisfied(
+		existsAnEventThat(isSaveDraft()))
+	\end{lstlisting}
+	
+  	\\ \hline  	
+  	 
+\end{longtable}
+\egroup
+\end{center}
 
 \subsubsection{Single Implication}
 
-\begin{lstlisting}
-providedThat(c1).then(c2)
-\end{lstlisting}
+\begin{center}
+\bgroup
+\def\arraystretch{1.5}%
+\begin{longtable}{ | m{0.3cm} | m{15cm} | }
+  \hline
+  
+  \rotatebox[origin=c]{90}{\textbf{ Structure }} & 
+  
+  	\begin{lstlisting}
+	providedThat(c1).then(c2)
+	\end{lstlisting}
+	
+  	\\ \hline
+  	 
+  \rotatebox[origin=c]{90}{\textbf{ Description }} & 
+  
+  	\texttt{c2} is checked only if \texttt{c1} succeeds.
+	
+  	\\ \hline
 
-\texttt{c2} is checked only if \texttt{c1} succeeds.
+  \rotatebox[origin=c]{90}{\textbf{ FOL }} & 
+  
+  	\begin{multline*}
+	c1 \Rightarrow c2
+	\end{multline*}
+	
+  	\\ \hline
 
-\begin{multline*}
-c1 \Rightarrow c2
-\end{multline*}
+  \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
+  
+	\raisebox{-140pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide14.PNG}}
+	
+	
+  	\\ \hline
+  	
+  \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
+  
+  	\begin{lstlisting}
+	/* If the list order changes, then we must update the database */
+	providedThat(
+			exist(atLeast(1))
+				.eventsWhereEach(isListOrderChange()))
+		.then(
+			exist(exactly(1))
+				.eventsWhereEach(isSaveDatabase()))
+	\end{lstlisting}
+	
+  	\\ \hline  	
+  	 
+\end{longtable}
+\egroup
+\end{center}
 
 \subsubsection{Double Implication}
 
-\begin{lstlisting}
-weHaveThat(c1).ifAndOnlyIf(c2)
-\end{lstlisting}
+\begin{center}
+\bgroup
+\def\arraystretch{1.5}%
+\begin{longtable}{ | m{0.3cm} | m{15cm} | }
+  \hline
+  
+  \rotatebox[origin=c]{90}{\textbf{ Structure }} & 
+  
+  	\begin{lstlisting}
+	isSatisfied(c1).iff(c2)
+	\end{lstlisting}
+	
+  	\\ \hline
+  	 
+  \rotatebox[origin=c]{90}{\textbf{ Description }} & 
+  
+  	Succeeds only if both sub-checks fail or both succeed.
+	
+  	\\ \hline
 
-Succeeds only if both sub-checks fail or both succeed.
+  \rotatebox[origin=c]{90}{\textbf{ FOL }} & 
+  
+  	\begin{multline*}
+	c1 \iff c2
+	\end{multline*}
+	
+  	\\ \hline
 
-\begin{multline*}
-c1 \iff c2
-\end{multline*}
+  \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
+  
+	\raisebox{-140pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide15.PNG}}
+	
+	
+  	\\ \hline
+  	
+  \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
+  
+  	\begin{lstlisting}
+	/* Send email if and only if the user clicks on the send button */			
+	isSatisfied(
+			existsAnEventThat(isClickOn(sendButton)))
+		.iff(
+			existsAnEventThat(isSendEmail()))
+	\end{lstlisting}
+	
+  	\\ \hline  	
+  	 
+\end{longtable}
+\egroup
+\end{center}
 
 \section{Design}\label{event_design}
 To implement the event-based testing approach described so far we need the following main components:
