@@ -108,7 +108,47 @@
 
 \part{Introduction}
 
-\section{Abstract}
+\section{Context}
+- mobile growth, etc.
+
+Due to this widespread, mobile applications require high quality standards and the only way a developer can obtain a guarantee of correctness and usability in a set of specific circumstances is testing.\bigskip \\
+Mobile testing, however, presents several challenges. The main problem is diversity: there are hundreds of different devices that may run an application, each with different hardware capabilities, screen sizes, available sensors and input methods, operative systems or versions of the same operative system. Other issues are for example network availability, internationalization, scripting (e.g. emulate touchscreen gestures during a test) and usability.
+\medskip \\
+In addition to this, mobile applications are characterized by a highly dynamic environment, where hundreds of events may be processed every minute, such as sensor data, connectivity changes, user input, network responses, etc. These events can happen in many different orders and frequencies, and, if the developer does not handle them correctly, this may lead to unexpected behaviors or crashes.\medskip \\
+Moreover, application components are characterized by their lifecycle, i.e. by several working states such as running, paused, destroyed, etc. This particular type of events need to be carefully handled by the developer: for example an application should stop requesting sensor data while paused to avoid wasting resources or to commit unsaved data before it is closed.
+
+\section{Objectives}
+Given the critical aspects of event concurrency and lifecycle handling mentioned in the previous section, the aim of this thesis is to describe an event-based testing approach for Android applications. The Android operative system was chosen, because of its widespread and openness, but the main concepts are valid also for other mobile environments.\bigskip \\
+The focus of the first part of the thesis will be on lifeycle changes events. In particular, the problem of lifecycle handling will be addressed first with a static code analysis approach to recognize possible misuses of components, and then with a dynamic approach that will allow the developer to drive the application lifecycle to test its robustness.\bigskip \\
+The second part of the thesis will instead focus on generic events, providing to the developer a tool to test their behavior in dynamic conditions. More in detail, a temporal logic language will be defined to specify consistency checks on the stream of events, which will later be implemented in Android exploiting the ReactiveX library, an innovative system of industrial interest.
+
+\section{Achieved Results}
+The original contributions of this thesis are:
+\begin{itemize}
+	\item A survey of some of the approaches to test Android applications, in particular with regard to lifecycle handling and concurrency of events
+	\item A collection of examples of best practices in handling components according to the application lifecycle and the implementation of static checks to help the developer recognize possible misuses
+	\item Implementation of a testing framework that allows to verify the behavior of an application during common lifecycle changes
+	\item Definition of a temporal logic language to describe consistency checks among events and its implementation in a testing tool
+	\item Evaluation... TODO
+\end{itemize}
+
+\section{Outline of the Thesis}
+The thesis is organized as follows:
+\begin{itemize}
+	\item Part \ref{part_background} provides background information on testing and Android in general, as a reference to the main concepts used in the document
+	\item Part \ref{part_state_art} analyzes the main technologies available to test Android applications and some examples of research related to the main concepts of the thesis
+	\item Part \ref{part_motivation} introduces the idea of events and event-based testing, as well as a more detailed outline of the achieved results
+	\item Part \ref{part_lifecycle} focuses on the lifecycle events and in particular on the static and dynamic approaches to test them
+	\item Part \ref{part_events} explains in detail the concept of event-based testing proposed in the thesis
+	\item Part \ref{part_conclusion} summarizes the main concepts highlighting applicability, limitations and possible improvements
+\end{itemize}
+
+
+%..............................................................................%
+%................................. BACKGROUND .................................%
+%..............................................................................%
+
+\part{Background}\label{part_background}
 
 \section{Testing}
 Testing is the process used in software development to assess the validity of functional and non-functional requirements of an application. Although this verification is able to guarantee the correctness of the tested components within the specific conditions described by the test cases, testing cannot assess the validity of the whole application in every situation, because this would require an unfeasible amount of detail. For this reason, testing is mainly used to discover software bugs in particular situations and to reach an acceptable confidence that the program works as expected under the most common conditions.\bigskip \\
@@ -132,7 +172,7 @@ Android is a operating system (OS) developed by Google. It is designed primarily
 The OS is a multi-user Linux system in which each app is a different user. It is characterized by the so called sandboxing mechanism: each process runs in its own virtual machine (VM) and so every app runs in isolation from the other applications. This means that, by default, an application can access only a limited set of components and cannot access parts of the system for which it does not have permissions.\medskip \\
 Android applications are developed in a Java language environment. The Android Software Development Kit (SDK) compiles code, data and resources into a package called APK, which is used by the devices to install the application.
 
-\section{Android App Components}
+\section{Application Components}
 Android applications are built by five main components, each with its specific purpose:
 \begin{itemize}
 	\item Activity: an activity represents a single "action" that the user can take and, since almost all activities interact with the user, they provide a screen with a user interface. Each activity in the application is independent from the others, but it is of course possible to start an activity (for example when the user clicks on a button) from another to build the application flow.
@@ -143,75 +183,7 @@ Android applications are built by five main components, each with its specific p
 \end{itemize} 
 Activities, services and Broadcast Receivers are started asynchronously by messages called Intents. This allows not only an application to start its own components, but also to call on other applications. For example, a game may start its internal GameService to manage the game loop, but also send an intent to a social network application to share the game progress.
 
-%..............................................................................%
-%............................ STATE OF THE ART ................................%
-%..............................................................................%
-
-\part{Android Testing State of the Art}
-
-Android tests are mainly based on JUnit~\cite{JUnit}, a testing framework for Java. It allows to create classes called test cases that contain methods annotated with \texttt{@Test}, each representing a test.
-
-\section{Unit Testing}
-White-box unit testing in Android can be
-\begin{itemize}
-	\item Local: it runs on the local development machine (i.e. the computer where the application is coded). It has the advantage of being fast (avoids the overhead to load the application in a device/emulator), but can be exploited only if the tested unit has no dependencies or simple dependencies. This means that the test case should not use any device-specific features (e.g. expect a sensor input) or, if it does so, they should be minimal since they need to be mocked using for example tools like Mockito~\cite{Mockito}.
-	\item Instrumented: it is executed in a physical device or on an emulator and so has access to instrumentation information, such as the Context (information about the application environment). It is slower than the previous case but it's more convenient if the unit dependencies are too complex to mock.
-	\item Hybrid: the external library Robolectric~\cite{Robolectric} tries to take the advantages of the previous two approaches, i.e. it runs "instrumented" tests on the local machine, without mocking. As reported on the website, Robolectric allows a test style that is closer to black box testing, making the tests more effective for refactoring and allowing the tests to focus on the behavior of the application instead of the implementation of Android.
-\end{itemize}
-
-\section{UI Testing}
-Android also provides a way to test User Interface (UI) to see if it behaves as expected. This type of testing can be defined as a grey-box approach: the application is tested at the user level without considering the actual implementation of the UI, but the definition of the test cases may require to know some information on the internal structure, for example the IDs of the buttons to be clicked.
-\begin{itemize}
-	\item UI testing on a single app: the Espresso library provides APIs for writing UI tests to simulate user interactions. In general, defining a test case means building a series of \texttt{onView(Matcher).perform(ViewAction).check(ViewAssertion)} instructions, i.e. select a particular View that matches some description (e.g. a button with "Start" text), perform one or more actions on it (e.g. click) and check if some conditions are true (e.g. if after the click the button text changes). The main advantages of Espresso are that the test cases are easily readable and understood, and that it has automatic synchronization (before performing an action it waits for the previous ones to be completed, i.e. for the main thread to be idle).
-	\item UI testing on multiple apps: the UI Automator library allows to test if the developed application interacts correctly with the system or other apps (e.g. the application may request an image, the Camera app is opened, the picture is taken and then the control goes back to the original application). 
-\end{itemize}
-
-\section{Runner Tools}
-In addition to the testing frameworks described in the previous sections, Android also offers some tools to run and test an application without accessing the source code (black-box testing):
-\begin{itemize}
-	\item UI Exerciser Monkey: allows to run an application on a physical device or emulator generating a pseudo-random (but repeatable) streams of user events (e.g. clicks) and system-level events (e.g. start call). The developer can set several options like target package, probability of certain events, etc.
-	\item monkeyrunner: controls a device or emulator from a workstation by sending specific commands and events defined as a Python program. It also allows to take screenshot during the test execution and store them on the workstation.
-\end{itemize}
-
-\section{Assertions in Android}
-An assertion is a statement at a specific point in a program that enables to check an assumption. It is expected to be true, but if a bug is present the assertion will fail and the system will throw an error. Assertions are test oracles that specify what the application does rather than how.
-\bigskip \\
-In Java, the assertion statement is
-\begin{lstlisting}
-assert Expression1 : Expression2;
-\end{lstlisting}
-where \texttt{Expression1} is the boolean expression to be checked and \texttt{Expression2} is an expression that has a value to better describe the error. If \texttt{Expression1} is false, an \texttt{AssertionError} exception is thrown.\bigskip \\
-Many frameworks, including JUnit itself, offer several utility methods to easily write more complex assertions without using the \texttt{assert} keyword. For example, the method \texttt{assertEquals(String message, Object expected, Object actual)} checks that the two given objects are equal and, if not, throws an \texttt{AssertionError} with the given message.\bigskip \\
-Since Android has its own virtual machine ART, which is not compatible with JVM from Oracle, the \texttt{assert} keyword is not supported by default\footnote{It is however possible to manually enable assertions on a given device using for example the Android Debug Bridge command \texttt{adb shell setprop debug.assert 1} (assertions will be enabled for all applications until the device is rebooted), but the Android developers themselves discourage their use}. For this reason, in an Android application assertions are usually created exploiting JUnit-like methods that directly throw an \texttt{AssertionError} if the check fails. This means for example using the assertions provided by Android (via \texttt{Assert}, \texttt{MoreAsserts} and \texttt{ViewAssert} classes), the JUnit framework itself or other external libraries.
-
-\section{What's missing in Android testing (?)}
-?
-
-%..............................................................................%
-%............................... BACKGROUND ...................................%
-%..............................................................................%
-
-\part{Background}
-
-\section{Introduction to Events}
-
-\section{Background/Motivation}
-
-\section{Three Levels of Testing}
-
-
-%..............................................................................%
-%.................................. LIFECYCLE .................................%
-%..............................................................................%
-
-\part{Lifecycle Testing}
-
-\section{Introduction}
-The focus this part of the thesis is on a specific type of events that are generated by Android applications: lifecycle changes. As it will be explained later in detail, handling the lifecycle of the app components like Activities and Fragments is a critical aspect of Android development, and so this type of events deserves a separate in-depth analysis.\medskip \\
-In particular, two approaches for lifecycle testing will be proposed: static analysis and dynamic analysis. The former will try to analyze the source code of the application to detect possible issues related to the handling of some components in accordance to the host Activity/Fragment lifecycle, for example failing to release a resource that was previously acquired. The dynamic analysis approach, instead, will focus on pre-generated test cases that allow the developer to express some actions to be performed and conditions to be checked in common lifecycle events sequences, which will be used in several tests to assess the robustness of the application.\medskip \\
-The following sections will present first a detailed explanation of the main concepts of lifecycle in Android applications, then the static approach will be analyzed and finally the dynamic approach will be described.
-
-\section{Lifecycle}
+\section{Component Lifecycle}
 
 \subsection{Component Lifecycle}
 App components in Android such as Activities, Fragments and Services are characterized by their lifecycle, i.e. the current runtime state. In general each component is started and then destroyed, but some can also be paused and resumed, and go through several other states. When a lifecycle state transition happens, the Android system allows the developers to implement some callbacks (Java methods, usually overridden from the component class) in the component implementation to manage their behavior in those particular situations.
@@ -246,6 +218,111 @@ Like Activities, Fragments are characterized by three static states:
 	\item Stopped: the Fragment is completely hidden to the user. This can happen if the host Activity is also not visible (i.e. in background) or if the Fragment has been stored in the backstack. Like Activities, stopped Fragments are still "alive" and their state is retained.
 \end{itemize}
 Lifecycle management for Fragments is very similar to the one for Activities, since all callbacks are the same. Fragments provide however some additional methods to manage the interaction with the host Activity: for example \texttt{onAttach()} is called when the Fragment is linked to an Activity, \texttt{onCreateView()} when the Fragment is ready to build its UI, etc.
+
+
+%..............................................................................%
+%............................ STATE OF THE ART ................................%
+%..............................................................................%
+
+
+\part{Android Testing State of the Art}\label{part_state_art}
+
+Android tests are mainly based on JUnit~\cite{JUnit}, a testing framework for Java. It allows to create classes called test cases that contain methods annotated with \texttt{@Test}, each representing a test.
+
+\section{Unit Testing}
+White-box unit testing in Android can be
+\begin{itemize}
+	\item Local: it runs on the local development machine (i.e. the computer where the application is coded). It has the advantage of being fast (avoids the overhead to load the application in a device/emulator), but can be exploited only if the tested unit has no dependencies or simple dependencies. This means that the test case should not use any device-specific features (e.g. expect a sensor input) or, if it does so, they should be minimal since they need to be mocked using for example tools like Mockito~\cite{Mockito}.
+	\item Instrumented: it is executed in a physical device or on an emulator and so has access to instrumentation information, such as the Context (information about the application environment). It is slower than the previous case but it's more convenient if the unit dependencies are too complex to mock.
+	\item Hybrid: the external library Robolectric~\cite{Robolectric} tries to take the advantages of the previous two approaches, i.e. it runs "instrumented" tests on the local machine, without mocking. As reported on the website, Robolectric allows a test style that is closer to black box testing, making the tests more effective for refactoring and allowing the tests to focus on the behavior of the application instead of the implementation of Android.
+\end{itemize}
+
+\section{UI Testing}
+Android also provides a way to test User Interface (UI) to see if it behaves as expected. This type of testing can be defined as a grey-box approach: the application is tested at the user level without considering the actual implementation of the UI, but the definition of the test cases may require to know some information on the internal structure, for example the IDs of the buttons to be clicked.
+\begin{itemize}
+	\item UI testing on a single app: the Espresso library provides APIs for writing UI tests to simulate user interactions. In general, defining a test case means building a series of \texttt{onView(Matcher).perform(ViewAction).check(ViewAssertion)} instructions, i.e. select a particular View that matches some description (e.g. a button with "Start" text), perform one or more actions on it (e.g. click) and check if some conditions are true (e.g. if after the click the button text changes). The main advantages of Espresso are that the test cases are easily readable and understood, and that it has automatic synchronization (before performing an action it waits for the previous ones to be completed, i.e. for the main thread to be idle).
+	\item UI testing on multiple apps: the UI Automator library allows to test if the developed application interacts correctly with the system or other apps (e.g. the application may request an image, the Camera app is opened, the picture is taken and then the control goes back to the original application). 
+\end{itemize}
+
+\section{Runner Tools}
+In addition to the testing frameworks described in the previous sections, Android also offers some tools to run and test an application without accessing the source code (black-box testing):
+\begin{itemize}
+	\item UI Exerciser Monkey: allows to run an application on a physical device or emulator generating a pseudo-random (but repeatable) streams of user events (e.g. clicks) and system-level events (e.g. start call). The developer can set several options like target package, probability of certain events, etc.
+	\item monkeyrunner: controls a device or emulator from a workstation by sending specific commands and events defined as a Python program. It also allows to take screenshot during the test execution and store them on the workstation.
+\end{itemize}
+
+\section{Lifecycle Testing}
+Due to the importance of lifecycle handling, some approaches to test applications focusing on this aspect have been developed.
+
+\subsection{Testing Frameworks Support}
+The instrumented testing framework provided by Google allows to drive an Activity lifecycle via the methods \texttt{callActivityOnStart()}, \texttt{callActivityOnPause()}, etc. provided by the \texttt{Instrumentation} class. These methods, however, are complex to use because the developer needs to chain the correct methods in each test to simulate a valid lifecycle transition (e.g. for example to simulate the Activity being closed the developer needs to call in order pause, stop and destroy) and, since they are required to run on the main thread of the application, often need to be executed inside a \texttt{Runnable} that may require explicit synchronization with the testing thread.\bigskip \\
+The Robolectric framework makes things a little easier allowing the developer to specify a chain of transitions like \texttt{buildActivity(MyActivity.class).create().start().resume()}, avoiding \texttt{Runnable} and synchronization problems. This approach however suffers the same problem of the instrumented framework: it requires explicit calls to the correct chain of transitions to simulate realistic behaviors, and so coded by the developers only in very specific situations.
+
+\subsection{THOR}
+One example of tool designed with particular regard to lifecycle handling is THOR~\cite{Adamsen:2015:SEA:2771783.2771786}. The idea of the tool is to run pre-existing UI test cases (defined in Robotium or Espresso) in adverse conditions to test their robustness. These adverse conditions are not however unusual events, but common expected behaviors of the application. In particular, THOR injects in the tests several neutral system events, i.e. events that are not expected to change the outcome of the test. These neutral events are mainly related to Activity lifecycle: for example Pause $\rightarrow$ Resume; Pause $\rightarrow$ Stop $\rightarrow$ Restart; Audio
+focus loss $\rightarrow$ Audio focus gain. Neutral events injected in an application that does not manage the lifecycle correctly can lead to the discovery of bugs, which are not necessarily crashes but also unexpected behaviors for the specific application.\smallskip \\
+The tool provides several interesting features like
+\begin{itemize}
+	\item Neutral events are injected in suitable locations to avoid conflicts with the test case: in particular they are triggered when the event queue becomes empty and the execution of the remaining test is delayed.
+	\item Multiple errors for each test: if a test fails after some neutral event injections, the test is rerun but injections are only performed after the previous failure point to maximize error detection
+	\item Faults Localization: if a test fails, the tool tries to identify the exact causes (i.e. the neutral events responsible for the unexpected behavior) using a variant of delta debugging (scientific approach of hypothesis-trial-result loop), then displays this information to the user to allow further investigation
+	\item Faults Classification: the errors that make the test cases fail are classified by importance and criticality
+	\item Customization: the developer can select the set of tests to run,
+the set of neutral event sequences to take into account, and
+several other different variations
+\end{itemize}
+While very interesting and useful for bug detection, THOR is not a very user-friendly tool. First of all the tests are run via an external program (and so the developer is not able to simply run the tests via an IDE like Android Studio) that is only available for Linux and its installation is not immediate. Moreover, THOR only executes the test cases on an emulator running Android KitKat 4.4.3, which does not leave any choice to the developer on which version of Android to test.
+
+\section{Event Testing}
+Due to the relevance of the race conditions problem, several research studies tried to provide a way to detect them.
+
+\subsection{CAFA}
+For example, CAFA~\cite{Hsiao:2014:RDE:2666356.2594330} is a tool that allows to detect use-free races. The authors note that thousands of events may get executed every second in a mobile system and that, even if they are processed sequentially in one thread, most of them are logically concurrent. These concurrent events could be commutative with respect to each other, i.e. the result is the same even if they are executed in a different order. The tool tries to determine if two events are commutative or not, restricting the focus on use-after-free violations (a reference is used after it has been freed, i.e. it does not point to an object anymore). If two events where one uses and the other frees a reference are logically concurrent, they must be non-commutative. To detect possible racy conditions the tool analyzes the traces of the low-level read and write operations, as well as certain branch instructions. While CAFA was a good starting point of race condition analysis, its main problems are that it's quite slow (it may take hours to analyze an application), only focuses on a very specific type of race condition and the tool is not publicly available.
+
+\subsection{EventRacer}
+Android EventRacer~\cite{Bielik:2015:SRD:2858965.2814303} is an improvement of CAFA, defined by the authors as the
+first scalable analysis system for finding harmful data races in real-world Android applications. EventRacer not only analyzes use-free races, but also other types of race conditions like:
+\begin{itemize}
+	\item Data Races Caused by Object Reuse: list components in Android, like ListView, usually reuse rows while the user scrolls to improve performance (no need to create as many rows as the number of data values). If data for each row is loaded asynchronously, it may happen that the wrong data is loaded in a row (the user scrolled the list in the meanwhile and the row has already been reused).
+	\item Data Races Caused by Invalidation: these are the races similar to the first example, i.e. the AsyncTask completing when the Activity no longer exists
+	\item Callback Races: different listener callbacks may be invoked in any order. For example the developer may asynchronously create a GoogleMap object and request location updates from the device GPS. He/she may expect the \texttt{onMapReady()} callback to be executed before the first \texttt{onLocationChanged()} callback (and so use the map to place a marker at the received location), but it might not be the case.
+\end{itemize}
+Moreover, EventRacer analyzes an application in much less time than CAFA: building the Happens-Before relationship graph has $\mathcal{O}(n^2)$ time complexity instead of $\mathcal{O}(n^3)$. The tool is also publicly available as an online tester or an offline application (only available for Linux systems). One disadvantage of the EventRacer approach is that the implementation requires to modify the Android framework in order to access low-level information and, for this reason, it is only available for Android 4.4, which limits the options of the developer for testing other versions of the OS.
+
+\subsection{DEvA}
+A completely different approach for race detection is provided by DEvA~\cite{Safi:2015:DEA:2786805.2786836}. The idea of the tool is to base its search on static code analysis rather than dynamic analysis (CAFA and EventRacer run the application on emulators, interact with it via "robots" and then retrieve the traces to be analyzed): this approach of course guarantees more code coverage and completeness. DEvA focuses on a specific type of problem called Event Anomalies: processing of two or more events results in accesses to the same memory location and at least one of those is a write access (note that the use-free races analyzed by CAFA are a subclass of this type of issue). The idea of the tool is to identify variables that may be modified as a result of receiving an event (i.e. a potential Event Anomaly) using the Control Flow Graph of the application (i.e. all paths that may be traversed in the application during its execution). The tools receives as input from the developer
+\begin{itemize}
+	\item the list of all methods used as event handlers (callbacks that use the events)
+	\item the base class used to implement events in the system
+	\item the set of methods used as consumed event revealing statements (i.e. methods that retrieve information stored in an event without modifying the event's attributes), used to tell apart events when a general parameter is passed to a callback
+\end{itemize}
+DEvA allows a very fast analysis (usually 1 or 2 minutes) and guarantees complete code coverage, but static analysis may report false positives or be unable to detect some anomalies.
+
+%..............................................................................%
+%............................... MOTIVATION ...................................%
+%..............................................................................%
+
+\part{Motivation}\label{part_motivation}
+
+\section{Introduction to Events}
+
+\section{Motivation (...)}
+
+\section{Three Levels of Testing}
+
+
+%..............................................................................%
+%.................................. LIFECYCLE .................................%
+%..............................................................................%
+
+\part{Lifecycle Testing}\label{part_lifecycle}
+
+\section{Introduction}
+The focus this part of the thesis is on a specific type of events that are generated by Android applications: lifecycle changes. As it will be explained later in detail, handling the lifecycle of the app components like Activities and Fragments is a critical aspect of Android development, and so this type of events deserves a separate in-depth analysis.\medskip \\
+In particular, two approaches for lifecycle testing will be proposed: static analysis and dynamic analysis. The former will try to analyze the source code of the application to detect possible issues related to the handling of some components in accordance to the host Activity/Fragment lifecycle, for example failing to release a resource that was previously acquired. The dynamic analysis approach, instead, will focus on pre-generated test cases that allow the developer to express some actions to be performed and conditions to be checked in common lifecycle events sequences, which will be used in several tests to assess the robustness of the application.\medskip \\
+The following sections will present first a detailed explanation of the main concepts of lifecycle in Android applications, then the static approach will be analyzed and finally the dynamic approach will be described.
+
+
 
 \subsection{Managing the Lifecycle}\label{managing_lifecycle}
 Handling the components lifecycle is a critical aspect in developing an Android application and it is often source of bugs or unexpected behaviors. For example, properly implementing Activity/Fragment lifecycle methods ensures that the app
@@ -302,21 +379,7 @@ In general, for Activities and Fragments the developer should make sure to
 
 \end{itemize}
 
-\subsection{Existing Lifecycle Testing}
-Due to the importance of lifecycle handling, some approaches to test applications focusing on this aspect have been developed.\bigskip \\
-One example is THOR~\cite{Adamsen:2015:SEA:2771783.2771786}. The idea of the tool is to run pre-existing UI test cases (defined in Robotium or Espresso) in adverse conditions to test their robustness. These adverse conditions are not however unusual events, but common expected behaviors of the application. In particular, THOR injects in the tests several neutral system events, i.e. events that are not expected to change the outcome of the test. These neutral events are mainly related to Activity lifecycle: for example Pause $\rightarrow$ Resume; Pause $\rightarrow$ Stop $\rightarrow$ Restart; Audio
-focus loss $\rightarrow$ Audio focus gain. Neutral events injected in an application that does not manage the lifecycle correctly can lead to the discovery of bugs, which are not necessarily crashes but also unexpected behaviors for the specific application.\smallskip \\
-The tool provides several interesting features like
-\begin{itemize}
-	\item Neutral events are injected in suitable locations to avoid conflicts with the test case: in particular they are triggered when the event queue becomes empty and the execution of the remaining test is delayed.
-	\item Multiple errors for each test: if a test fails after some neutral event injections, the test is rerun but injections are only performed after the previous failure point to maximize error detection
-	\item Faults Localization: if a test fails, the tool tries to identify the exact causes (i.e. the neutral events responsible for the unexpected behavior) using a variant of delta debugging (scientific approach of hypothesis-trial-result loop), then displays this information to the user to allow further investigation
-	\item Faults Classification: the errors that make the test cases fail are classified by importance and criticality
-	\item Customization: the developer can select the set of tests to run,
-the set of neutral event sequences to take into account, and
-several other different variations
-\end{itemize}
-While very interesting and useful for bug detection, THOR is not a very user-friendly tool. First of all the tests are run via an external program (and so the developer is not able to simply run the tests via an IDE like Android Studio) that is only available for Linux and its installation is not immediate. Moreover, THOR only executes the test cases on an emulator running Android KitKat 4.4.3, which does not leave any choice to the developer on which version of Android to test.
+
 
 
 \section{Static Analysis}
@@ -554,7 +617,7 @@ The class for ActivityTestRule tests is provided by the \texttt{ActivityRuleLife
 %.................................... EVENTS ..................................%
 %..............................................................................%
 
-\part{Event-based Testing}
+\part{Event-based Testing}\label{part_events}
 
 \section{Introduction}
 In this part of the thesis a system to test Android applications from the point of view of the generated events will be presented. In particular, the idea is to allow the developer to specify some conditions on the event stream (for example that an event of a certain type always comes after another event of a certain type) that will later be verified at runtime. The implementation of this event-based testing approach will exploit the ReactiveX library, an innovative system of industrial interest (it is employed for example by Microsoft and Netflix) that allows to observe, transform and listen to events.\medskip \\
@@ -585,24 +648,7 @@ The concurrency among events inside a single application can lead to unexpected 
 When the Android developer decides to explicitly create a multi-threaded application we may have the classical problems of concurrency like synchronization, deadlocks and starvation, but problems arise even if he/she does not manually create threads, due to the aforementioned concurrency of events.\smallskip \\
 The most relevant problem in an Android application is race conditions: two or more events do not happen in the order the programmer intended. A simple example of this issue is when the developer asynchronously starts an AsyncTask (an utility class that allows to perform short operations in the background without blocking the UI thread) to download an image from the network. The AsyncTask, when the download is completed, expects the Activity that started it to be still there to receive the result, but maybe the user already left the application and so we encounter for example a NullPointerException.
 
-\subsection{Existing Event Testing}
-Due to the relevance of the race conditions problem, several research studies tried to provide a way to detect them.\medskip \\
-For example, CAFA~\cite{Hsiao:2014:RDE:2666356.2594330} is a tool that allows to detect use-free races. The authors note that thousands of events may get executed every second in a mobile system and that, even if they are processed sequentially in one thread, most of them are logically concurrent. These concurrent events could be commutative with respect to each other, i.e. the result is the same even if they are executed in a different order. The tool tries to determine if two events are commutative or not, restricting the focus on use-after-free violations (a reference is used after it has been freed, i.e. it does not point to an object anymore). If two events where one uses and the other frees a reference are logically concurrent, they must be non-commutative. To detect possible racy conditions the tool analyzes the traces of the low-level read and write operations, as well as certain branch instructions. While CAFA was a good starting point of race condition analysis, its main problems are that it's quite slow (it may take hours to analyze an application), only focuses on a very specific type of race condition and the tool is not publicly available.\bigskip \\
-Android EventRacer~\cite{Bielik:2015:SRD:2858965.2814303} is an improvement of CAFA, defined by the authors as the
-first scalable analysis system for finding harmful data races in real-world Android applications. EventRacer not only analyzes use-free races, but also other types of race conditions like:
-\begin{itemize}
-	\item Data Races Caused by Object Reuse: list components in Android, like ListView, usually reuse rows while the user scrolls to improve performance (no need to create as many rows as the number of data values). If data for each row is loaded asynchronously, it may happen that the wrong data is loaded in a row (the user scrolled the list in the meanwhile and the row has already been reused).
-	\item Data Races Caused by Invalidation: these are the races similar to the first example, i.e. the AsyncTask completing when the Activity no longer exists
-	\item Callback Races: different listener callbacks may be invoked in any order. For example the developer may asynchronously create a GoogleMap object and request location updates from the device GPS. He/she may expect the \texttt{onMapReady()} callback to be executed before the first \texttt{onLocationChanged()} callback (and so use the map to place a marker at the received location), but it might not be the case.
-\end{itemize}
-Moreover, EventRacer analyzes an application in much less time than CAFA: building the Happens-Before relationship graph has $\mathcal{O}(n^2)$ time complexity instead of $\mathcal{O}(n^3)$. The tool is also publicly available as an online tester or an offline application (only available for Linux systems). One disadvantage of the EventRacer approach is that the implementation requires to modify the Android framework in order to access low-level information and, for this reason, it is only available for Android 4.4, which limits the options of the developer for testing other versions of the OS.\bigskip \\
-A completely different approach for race detection is provided by DEvA~\cite{Safi:2015:DEA:2786805.2786836}. The idea of the tool is to base its search on static code analysis rather than dynamic analysis (CAFA and EventRacer run the application on emulators, interact with it via "robots" and then retrieve the traces to be analyzed): this approach of course guarantees more code coverage and completeness. DEvA focuses on a specific type of problem called Event Anomalies: processing of two or more events results in accesses to the same memory location and at least one of those is a write access (note that the use-free races analyzed by CAFA are a subclass of this type of issue). The idea of the tool is to identify variables that may be modified as a result of receiving an event (i.e. a potential Event Anomaly) using the Control Flow Graph of the application (i.e. all paths that may be traversed in the application during its execution). The tools receives as input from the developer
-\begin{itemize}
-	\item the list of all methods used as event handlers (callbacks that use the events)
-	\item the base class used to implement events in the system
-	\item the set of methods used as consumed event revealing statements (i.e. methods that retrieve information stored in an event without modifying the event's attributes), used to tell apart events when a general parameter is passed to a callback
-\end{itemize}
-DEvA allows a very fast analysis (usually 1 or 2 minutes) and guarantees complete code coverage, but static analysis may report false positives or be unable to detect some anomalies.
+
 
 \section{Temporal Assertions Language}
 
@@ -1582,7 +1628,7 @@ TODO ADD EXIST
 %................................. CONCLUSION .................................%
 %..............................................................................%
 
-\part{Conclusion}
+\part{Conclusion}\label{part_conclusion}
 
 \section{Recap}
 
