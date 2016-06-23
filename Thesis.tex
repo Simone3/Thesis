@@ -114,8 +114,11 @@
 Due to this widespread, mobile applications require high quality standards and the only way a developer can obtain a guarantee of correctness and usability in a set of specific circumstances is testing.\bigskip \\
 Mobile testing, however, presents several challenges. The main problem is diversity: there are hundreds of different devices that may run an application, each with different hardware capabilities, screen sizes, available sensors and input methods, operative systems or versions of the same operative system. Other issues are for example network availability, internationalization, scripting (e.g. emulate touchscreen gestures during a test) and usability.
 \medskip \\
-In addition to this, mobile applications are characterized by a highly dynamic environment, where hundreds of events may be processed every minute, such as sensor data, connectivity changes, user input, network responses, etc. These events can happen in many different orders and frequencies, and, if the developer does not handle them correctly, this may lead to unexpected behaviors or crashes.\medskip \\
-Moreover, application components are characterized by their lifecycle, i.e. by several working states such as running, paused, destroyed, etc. This particular type of events need to be carefully handled by the developer: for example an application should stop requesting sensor data while paused to avoid wasting resources or to commit unsaved data before it is closed.
+This thesis focuses on two particular challenges of mobile development:
+\begin{itemize}
+	\item Events: mobile applications are characterized by a highly dynamic environment, where hundreds of events may be processed every minute, such as sensor data, connectivity changes, user input, network responses, etc. These events can happen in many different orders and frequencies, and, if the developer does not handle them correctly, this may lead to unexpected behaviors or crashes.
+	\item Lifecycle: application components are characterized by their lifecycle, i.e. by several working states such as running, paused, destroyed, etc. This particular type of events need to be carefully handled by the developer: for example an application should stop requesting sensor data while paused to avoid wasting resources or to commit unsaved data before it is closed.
+\end{itemize}
 
 \section{Objectives}
 Given the critical aspects of event concurrency and lifecycle handling mentioned in the previous section, the aim of this thesis is to describe an event-based testing approach for Android applications. The Android operative system was chosen, because of its widespread and openness, but the main concepts are valid also for other mobile environments.\bigskip \\
@@ -137,7 +140,6 @@ The thesis is organized as follows:
 \begin{itemize}
 	\item Part \ref{part_background} provides background information on testing and Android in general, as a reference to the main concepts used in the document
 	\item Part \ref{part_state_art} analyzes the main technologies available to test Android applications and some examples of research related to the main concepts of the thesis
-	\item Part \ref{part_motivation} introduces the idea of events and event-based testing, as well as a more detailed outline of the achieved results
 	\item Part \ref{part_lifecycle} focuses on the lifecycle events and in particular on the static and dynamic approaches to test them
 	\item Part \ref{part_events} explains in detail the concept of event-based testing proposed in the thesis
 	\item Part \ref{part_conclusion} summarizes the main concepts highlighting applicability, limitations and possible improvements
@@ -168,11 +170,13 @@ There are usually four levels on which test cases can be defined:
 \end{itemize}
 
 \section{Android}
+
+\subsection{Operative System}
 Android is a operating system (OS) developed by Google. It is designed primarily for touchscreen mobile devices like smartphones and tablets, but recently it was extended to televisions (Android TV), cars (Android Auto) and smartwatches (Android Wear).\medskip \\
 The OS is a multi-user Linux system in which each app is a different user. It is characterized by the so called sandboxing mechanism: each process runs in its own virtual machine (VM) and so every app runs in isolation from the other applications. This means that, by default, an application can access only a limited set of components and cannot access parts of the system for which it does not have permissions.\medskip \\
 Android applications are developed in a Java language environment. The Android Software Development Kit (SDK) compiles code, data and resources into a package called APK, which is used by the devices to install the application.
 
-\section{Application Components}
+\subsection{Application Components}
 Android applications are built by five main components, each with its specific purpose:
 \begin{itemize}
 	\item Activity: an activity represents a single "action" that the user can take and, since almost all activities interact with the user, they provide a screen with a user interface. Each activity in the application is independent from the others, but it is of course possible to start an activity (for example when the user clicks on a button) from another to build the application flow.
@@ -183,12 +187,10 @@ Android applications are built by five main components, each with its specific p
 \end{itemize} 
 Activities, services and Broadcast Receivers are started asynchronously by messages called Intents. This allows not only an application to start its own components, but also to call on other applications. For example, a game may start its internal GameService to manage the game loop, but also send an intent to a social network application to share the game progress.
 
-\section{Component Lifecycle}
-
 \subsection{Component Lifecycle}
 App components in Android such as Activities, Fragments and Services are characterized by their lifecycle, i.e. the current runtime state. In general each component is started and then destroyed, but some can also be paused and resumed, and go through several other states. When a lifecycle state transition happens, the Android system allows the developers to implement some callbacks (Java methods, usually overridden from the component class) in the component implementation to manage their behavior in those particular situations.
 
-\subsection{Activity Lifecycle}
+\subsubsection{Activity Lifecycle}
 An Activity can be in three static states:
 \begin{itemize}
 	\item Resumed: the Activity is visible and can receive user input
@@ -209,7 +211,7 @@ This image shows a simplified scheme of the Activity lifecycle transitions with 
 
 [TODO extend with more detailed explanations of callbacks, save instance, etc.? More detailed diagram?]
 
-\subsection{Fragment Lifecycle}
+\subsubsection{Fragment Lifecycle}
 The lifecycle of a Fragment is closely related to the lifecycle of the Activity that contains it: for example, when an activity is paused, all the contained Fragments are paused too. In addition to this, however, Fragments can go through lifecycle changes independently of their host Activity: in particular, since fragments can be dynamically added and removed at runtime, they can be created and destroyed while the Activity is running. Moreover, the developer also has the option to store removed fragments in the so-called backstack and be able to restore them later for example when the user presses the "back" button.\smallskip \\
 Like Activities, Fragments are characterized by three static states:
 \begin{itemize}
@@ -218,6 +220,88 @@ Like Activities, Fragments are characterized by three static states:
 	\item Stopped: the Fragment is completely hidden to the user. This can happen if the host Activity is also not visible (i.e. in background) or if the Fragment has been stored in the backstack. Like Activities, stopped Fragments are still "alive" and their state is retained.
 \end{itemize}
 Lifecycle management for Fragments is very similar to the one for Activities, since all callbacks are the same. Fragments provide however some additional methods to manage the interaction with the host Activity: for example \texttt{onAttach()} is called when the Fragment is linked to an Activity, \texttt{onCreateView()} when the Fragment is ready to build its UI, etc.
+
+\subsubsection{Managing the Lifecycle}\label{managing_lifecycle}
+Handling the components lifecycle is a critical aspect in developing an Android application and it is often source of bugs or unexpected behaviors. For example, properly implementing Activity/Fragment lifecycle methods ensures that the app
+\begin{itemize}
+	\item does not waste system resources (e.g. device sensors) while the user is not interacting with it
+	\item stops its execution when the user leaves the application (for example a game should pause if the user receives a phone call)
+	\item retains its state if the user leaves and then returns to the application (e.g. a messaging app must keep a partially written message even if the user puts the app in background for a moment)
+	\item does not crash or loses user progress when lifecycle changes occur (e.g. an app that does not correctly manage lifecycle may crash with a NullPointerException if some internal component was destroyed during \texttt{onStop()} but not restored during \texttt{onStart()})
+	\item adapts to configuration changes (like a device rotation between landscape and portrait modes) without losing data or crashing
+\end{itemize}
+In general, for Activities and Fragments the developer should make sure to
+\begin{itemize}
+	\item during \texttt{onCreate()}
+	\begin{itemize}
+		\item set the layout resource defining the UI
+		\item initialize View components (e.g. add click listeners to buttons)
+		\item initialize the component logic (e.g. class-scope variables)
+		\item restore the previous state (if any) saved during \texttt{onSaveInstanceState()} [this can be alternatively performed during \texttt{onRestoreInstanceState()}]
+	\end{itemize}
+	\item during \texttt{onRestart()}
+	\begin{itemize}
+		\item Requery raw Cursor objects previously deactivated during \texttt{onStop()}
+	\end{itemize}
+		\item during \texttt{onStart()}
+	\begin{itemize}
+		\item acquire "secondary" resources (e.g. Broadcast Receiver)
+		\item verify system features (e.g. GPS enabled), because they may change when the application is in background
+	\end{itemize}
+	\item during \texttt{onResume()}
+	\begin{itemize}
+		\item start animations and similar CPU-intensive operations
+		\item acquire "critical" resources (e.g. camera, sensors)
+		\item should \textit{not} restart on-going operations that require user visibility (e.g. games, videos), but let the user decide when to do so
+	\end{itemize}
+	\item during \texttt{onPause()}
+	\begin{itemize}
+		\item commit unsaved changes made by the user (e.g. save a draft for an unfinished email), if it does not require too much time
+		\item stop animations and other things that may be consuming CPU
+		\item stop on-going operations that require user visibility (e.g. games, videos)
+		\item release "critical" resources (e.g. camera, sensors)
+		\item should \textit{not} perform any long running operation, the call to this method must be very quick
+	\end{itemize}
+	\item during \texttt{onStop()}
+	\begin{itemize}
+		\item release "secondary" resources (e.g. Broadcast Receiver)
+		\item perform CPU-intensive shutdown operations (e.g. write unsaved data to database)
+	\end{itemize}
+	\item during \texttt{onDestroy()}
+	\begin{itemize}
+		\item stop background threads created during \texttt{onCreate()}
+		\item release long-running resources that could create memory leaks
+		\item should \textit{not} save data, because the method may not be called in all situations
+	\end{itemize}
+
+\end{itemize}
+
+\section{Event-based Systems}
+
+\subsection{Event-Driven Architecture}
+Event-Driven Architecture is a software pattern where the focus is on generation and reaction to events. An event can be defined as a message generated by a producer that represents a change of state or a relevant action performed by some component/actor (e.g. the user). Once generated, events are sent via event channels to all the consumers that are interested to them. Event-Driven Architectures are
+\begin{itemize}
+	\item extremely loosely coupled: the producer does not know about the consequences of its events. It just generates them and then it's up to the consumers to manage everything else.
+	\item well distributed: an event can be anything and exist almost anywhere
+\end{itemize}
+
+\subsection{Android as an Event-Driven Architecture}
+Android is implemented as an event-based model. This is because a device must manage several events, like clicks on the touchscreen, sensor data, network requests/responses, etc.\smallskip \\
+From an application point of view, events can be generated internally (e.g. from a service/thread created by the application itself) or externally (e.g. sensor data). Each application is composed of several threads, a subset of which, called Looper threads, are in charge of processing events by invoking an appropriate event Handler for each of them.\smallskip \\
+Events from a single thread are atomic, i.e. they are placed on a FIFO event queue and processes one by one. However, events produced by several threads are processed concurrently and not guaranteed to be ordered or atomic. For example the user may click on a button while the application receives a network response and the device broadcasts some sensor data.\smallskip \\
+Examples of events that can be observed in an Android application:
+\begin{itemize}
+	\item User input events can be observed attaching listeners to View components. An event listener is an interface whose methods are called by the Android framework when the View is triggered by user interaction, for example the \texttt{onClick()} callback of a listener attached to a Button will be called when the user clicks on that button. The developer can then implement the callback to perform any action in response to the input event generation, e.g. starting another activity.
+	\item Lifecycle events are triggered when there is a state transition of some component, like an Activity. For example the \texttt{onPause()} callback is invoked when an Activity is paused.
+	\item Broadcast events like system messages (e.g. device boot completed, alarm goes off, etc.) or application-specific messages are received by BroadcastReceivers in the \texttt{onReceive()} callback.
+	\item Asynchronous messages from services external to the application (e.g. sensor data, network requests, etc.) also have their specific callbacks 
+\end{itemize}
+And many more.
+
+\subsection{Event Concurrency Errors}
+The concurrency among events inside a single application can lead to unexpected behaviors or crashes.\smallskip \\
+When the Android developer decides to explicitly create a multi-threaded application we may have the classical problems of concurrency like synchronization, deadlocks and starvation, but problems arise even if he/she does not manually create threads, due to the aforementioned concurrency of events.\smallskip \\
+The most relevant problem in an Android application is race conditions: two or more events do not happen in the order the programmer intended. A simple example of this issue is when the developer asynchronously starts an AsyncTask (an utility class that allows to perform short operations in the background without blocking the UI thread) to download an image from the network. The AsyncTask, when the download is completed, expects the Activity that started it to be still there to receive the result, but maybe the user already left the application and so we encounter for example a NullPointerException.
 
 
 %..............................................................................%
@@ -298,18 +382,6 @@ A completely different approach for race detection is provided by DEvA~\cite{Saf
 \end{itemize}
 DEvA allows a very fast analysis (usually 1 or 2 minutes) and guarantees complete code coverage, but static analysis may report false positives or be unable to detect some anomalies.
 
-%..............................................................................%
-%............................... MOTIVATION ...................................%
-%..............................................................................%
-
-\part{Motivation}\label{part_motivation}
-
-\section{Introduction to Events}
-
-\section{Motivation (...)}
-
-\section{Three Levels of Testing}
-
 
 %..............................................................................%
 %.................................. LIFECYCLE .................................%
@@ -318,69 +390,10 @@ DEvA allows a very fast analysis (usually 1 or 2 minutes) and guarantees complet
 \part{Lifecycle Testing}\label{part_lifecycle}
 
 \section{Introduction}
-The focus this part of the thesis is on a specific type of events that are generated by Android applications: lifecycle changes. As it will be explained later in detail, handling the lifecycle of the app components like Activities and Fragments is a critical aspect of Android development, and so this type of events deserves a separate in-depth analysis.\medskip \\
-In particular, two approaches for lifecycle testing will be proposed: static analysis and dynamic analysis. The former will try to analyze the source code of the application to detect possible issues related to the handling of some components in accordance to the host Activity/Fragment lifecycle, for example failing to release a resource that was previously acquired. The dynamic analysis approach, instead, will focus on pre-generated test cases that allow the developer to express some actions to be performed and conditions to be checked in common lifecycle events sequences, which will be used in several tests to assess the robustness of the application.\medskip \\
-The following sections will present first a detailed explanation of the main concepts of lifecycle in Android applications, then the static approach will be analyzed and finally the dynamic approach will be described.
-
-
-
-\subsection{Managing the Lifecycle}\label{managing_lifecycle}
-Handling the components lifecycle is a critical aspect in developing an Android application and it is often source of bugs or unexpected behaviors. For example, properly implementing Activity/Fragment lifecycle methods ensures that the app
-\begin{itemize}
-	\item does not waste system resources (e.g. device sensors) while the user is not interacting with it
-	\item stops its execution when the user leaves the application (for example a game should pause if the user receives a phone call)
-	\item retains its state if the user leaves and then returns to the application (e.g. a messaging app must keep a partially written message even if the user puts the app in background for a moment)
-	\item does not crash or loses user progress when lifecycle changes occur (e.g. an app that does not correctly manage lifecycle may crash with a NullPointerException if some internal component was destroyed during \texttt{onStop()} but not restored during \texttt{onStart()})
-	\item adapts to configuration changes (like a device rotation between landscape and portrait modes) without losing data or crashing
-\end{itemize}
-In general, for Activities and Fragments the developer should make sure to
-\begin{itemize}
-	\item during \texttt{onCreate()}
-	\begin{itemize}
-		\item set the layout resource defining the UI
-		\item initialize View components (e.g. add click listeners to buttons)
-		\item initialize the component logic (e.g. class-scope variables)
-		\item restore the previous state (if any) saved during \texttt{onSaveInstanceState()} [this can be alternatively performed during \texttt{onRestoreInstanceState()}]
-	\end{itemize}
-	\item during \texttt{onRestart()}
-	\begin{itemize}
-		\item Requery raw Cursor objects previously deactivated during \texttt{onStop()}
-	\end{itemize}
-		\item during \texttt{onStart()}
-	\begin{itemize}
-		\item acquire "secondary" resources (e.g. Broadcast Receiver)
-		\item verify system features (e.g. GPS enabled), because they may change when the application is in background
-	\end{itemize}
-	\item during \texttt{onResume()}
-	\begin{itemize}
-		\item start animations and similar CPU-intensive operations
-		\item acquire "critical" resources (e.g. camera, sensors)
-		\item should \textit{not} restart on-going operations that require user visibility (e.g. games, videos), but let the user decide when to do so
-	\end{itemize}
-	\item during \texttt{onPause()}
-	\begin{itemize}
-		\item commit unsaved changes made by the user (e.g. save a draft for an unfinished email), if it does not require too much time
-		\item stop animations and other things that may be consuming CPU
-		\item stop on-going operations that require user visibility (e.g. games, videos)
-		\item release "critical" resources (e.g. camera, sensors)
-		\item should \textit{not} perform any long running operation, the call to this method must be very quick
-	\end{itemize}
-	\item during \texttt{onStop()}
-	\begin{itemize}
-		\item release "secondary" resources (e.g. Broadcast Receiver)
-		\item perform CPU-intensive shutdown operations (e.g. write unsaved data to database)
-	\end{itemize}
-	\item during \texttt{onDestroy()}
-	\begin{itemize}
-		\item stop background threads created during \texttt{onCreate()}
-		\item release long-running resources that could create memory leaks
-		\item should \textit{not} save data, because the method may not be called in all situations
-	\end{itemize}
-
-\end{itemize}
-
-
-
+As previously introduced, correctly handling a component lifecycle is a key aspect of Android application development, to avoid waste of resources, crashes and unexpected behaviors.\medskip \\
+However, the available means to thoroughly test an Activity lifecycle are lacking. As mentioned in the previous section, the Android testing frameworks provide low-level methods to drive the lifecycle but they need to be carefully chained to simulate realistic behaviors, and existing testing tools like THOR, while effective, present some limitations such as usability issues.\medskip \\
+Given this context, the solution proposed by the first part of this thesis tries to provide a more complete support to test a component lifecycle. In particular, two approaches for lifecycle testing will be proposed: static analysis and dynamic analysis. The former will try to analyze the source code of the application to detect possible issues related to the handling of some components in accordance to the host Activity/Fragment lifecycle, for example failing to release a resource that was previously acquired. The dynamic approach, instead, will provide to the developer a testing framework to easily drive the lifecycle, providing pre-generated test cases for the most common transitions.\medskip \\
+The following sections will present first the static approach and then the dynamic testing framework.
 
 \section{Static Analysis}
 
@@ -620,35 +633,12 @@ The class for ActivityTestRule tests is provided by the \texttt{ActivityRuleLife
 \part{Event-based Testing}\label{part_events}
 
 \section{Introduction}
-In this part of the thesis a system to test Android applications from the point of view of the generated events will be presented. In particular, the idea is to allow the developer to specify some conditions on the event stream (for example that an event of a certain type always comes after another event of a certain type) that will later be verified at runtime. The implementation of this event-based testing approach will exploit the ReactiveX library, an innovative system of industrial interest (it is employed for example by Microsoft and Netflix) that allows to observe, transform and listen to events.\medskip \\
-The following sections will present first an introduction to event-based systems, then a formalization of the temporal assertions language used to define the consistency checks on the event stream, followed by a detailed explanation of the design, implementation and evaluation of the system.
-
-\section{Event-based Systems}
-Event-Driven Architecture is a software pattern where the focus is on generation and reaction to events. An event can be defined as a message generated by a producer that represents a change of state or a relevant action performed by some component/actor (e.g. the user). Once generated, events are sent via event channels to all the consumers that are interested to them. Event-Driven Architectures are
-\begin{itemize}
-	\item extremely loosely coupled: the producer does not know about the consequences of its events. It just generates them and then it's up to the consumers to manage everything else.
-	\item well distributed: an event can be anything and exist almost anywhere
-\end{itemize}
-
-\subsection{Android as an Event-Driven Architecture}
-Android is implemented as an event-based model. This is because a device must manage several events, like clicks on the touchscreen, sensor data, network requests/responses, etc.\smallskip \\
-From an application point of view, events can be generated internally (e.g. from a service/thread created by the application itself) or externally (e.g. sensor data). Each application is composed of several threads, a subset of which, called Looper threads, are in charge of processing events by invoking an appropriate event Handler for each of them.\smallskip \\
-Events from a single thread are atomic, i.e. they are placed on a FIFO event queue and processes one by one. However, events produced by several threads are processed concurrently and not guaranteed to be ordered or atomic. For example the user may click on a button while the application receives a network response and the device broadcasts some sensor data.\smallskip \\
-Examples of events that can be observed in an Android application:
-\begin{itemize}
-	\item User input events can be observed attaching listeners to View components. An event listener is an interface whose methods are called by the Android framework when the View is triggered by user interaction, for example the \texttt{onClick()} callback of a listener attached to a Button will be called when the user clicks on that button. The developer can then implement the callback to perform any action in response to the input event generation, e.g. starting another activity.
-	\item Lifecycle events are triggered when there is a state transition of some component, like an Activity. For example the \texttt{onPause()} callback is invoked when an Activity is paused.
-	\item Broadcast events like system messages (e.g. device boot completed, alarm goes off, etc.) or application-specific messages are received by BroadcastReceivers in the \texttt{onReceive()} callback.
-	\item Asynchronous messages from services external to the application (e.g. sensor data, network requests, etc.) also have their specific callbacks 
-\end{itemize}
-And many more.
-
-\subsection{Event Concurrency Errors}
-The concurrency among events inside a single application can lead to unexpected behaviors or crashes.\smallskip \\
-When the Android developer decides to explicitly create a multi-threaded application we may have the classical problems of concurrency like synchronization, deadlocks and starvation, but problems arise even if he/she does not manually create threads, due to the aforementioned concurrency of events.\smallskip \\
-The most relevant problem in an Android application is race conditions: two or more events do not happen in the order the programmer intended. A simple example of this issue is when the developer asynchronously starts an AsyncTask (an utility class that allows to perform short operations in the background without blocking the UI thread) to download an image from the network. The AsyncTask, when the download is completed, expects the Activity that started it to be still there to receive the result, but maybe the user already left the application and so we encounter for example a NullPointerException.
-
-
+Moving from the specific type of events related to the lifecycle to a more general concept of event, we can also state that the built-in testing support is lacking from this point of view. In general, the only way to test concurrency of events with the provided testing frameworks is to manually set variables and check several conditions via conditional statements, which hardly helps in complex environments.\medskip \\
+Given this situation, several external approaches were devised, like the tools mentioned in the previous parts. From different point of views, they all try to detect concurrency problems among events, mainly related to data races.\medskip \\
+The solution proposed in the second part of this thesis aims at being a complementary tool to these approaches. More in detail, the idea is to provide a testing tool that makes event testing easier. Instead of focusing on automatic detection, which is already covered both dynamically and statically by the aforementioned tools, it will provide the means to manually specify conditions during standard unit, integration or UI tests. In particular, the developer will be able to specify which events to observe during the execution and then to specify consistency checks on their stream, such as happens-before relationship, ordering, etc.\medskip \\
+This approach allows to detect possible race conditions like the other tools, but the scope is not limited to data races but the developer is able to specify any type of condition on any event generated by the application, from user input to sensor data callbacks. Moreover, the tools does not only apply to race conditions but it also allows to focus on ordering among similar events, to quantify the amount of events of a certain type during a particular execution and so on.\medskip \\
+As mentioned before, the implementation of this event-based testing approach will exploit the ReactiveX library, an innovative system of industrial interest (it is employed for example by Microsoft and Netflix) that allows to observe, transform and listen to events.\medskip \\
+The following sections will first present a formalization of the temporal assertions language used to define the consistency checks on the event stream, followed by a detailed explanation of the design, implementation and evaluation of the system.
 
 \section{Temporal Assertions Language}
 
@@ -1516,7 +1506,7 @@ The \textit{EventMonitor} offers methods to add one or more \textit{EventGenerat
 Each \textit{Check} contains the logic of a consistency check: it will receive each \textit{Event} of the stream in order and act accordingly. A \textit{Check} has the possibility to short-circuit its behavior (i.e. interrupt the stream of events if the consistency check succeeds or fails before the end of the sequence). In any case, when it short-circuits or the stream comes to an end, the \textit{Check} produces one and only one \textit{Result} object.\medskip \\
 Each \textit{Result} contains an \textit{Outcome} and a message describing it. In particular, an \textit{Outcome} can be a \textit{Success}, a \textit{Failure} and a \textit{Warning}. A \textit{Warning} outcome has not been included in the formal specifications of the checks in the previous section for simplicity: it's meaning is that the \textit{Check} succeeded with some minor error or in a particular situations (for example a check that specifies that an event A always generates exactly one event B may return \textit{Warning} if no event A has been found in the sequence).\medskip \\
 A \textit{Descriptor} allows to specify a \textit{Check}. It describes one or more events of the stream and provides some methods to express a condition on those events. In particular, \textit{SingleEvent} describes a single event of a certain type at a time, \textit{SetOfEvents} describes a set of events of a certain type at a time and \textit{AllEvents} describes all the events of a certain type in the whole stream. To determine the type of the events identified by the \textit{Descriptor}, a \textit{Matcher} object is used.\medskip \\
-The cardinality of the descriptor \textit{SetOfEvents} is defined by a \textit{Quantifier} that has an integer values as input. A quantifier can be\textit{Exactly}, \textit{AtMost} or \textit{AtLeast}.\medskip \\
+The cardinality of the descriptor \textit{SetOfEvents} is defined by a \textit{Quantifier} that has an integer values as input. A quantifier can be \textit{Exactly}, \textit{AtMost} or \textit{AtLeast}.\medskip \\
 Finally, a \textit{CheckConnective} allows to transform one or more \textit{Check} objects into a single \textit{Check}, i.e. it specifies one of the standard logic connectives \textit{Not}, \textit{And}, \textit{Or}, \textit{SingleImplication} and \textit{DoubleImplication}.
 
 \section{Implementation}
