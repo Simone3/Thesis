@@ -66,6 +66,10 @@
 \setlength{\medmuskip}{3\medmuskip}
 \setlength{\thickmuskip}{3\thickmuskip}
 
+% For fix notes
+\usepackage[english, status=draft]{fixme}
+\fxusetheme{color}
+
 % Document title data
 \title{\Large{TODO\\2015-2016}\\\Huge{TODO}}
 \author{836897 Simone Graziussi}
@@ -534,7 +538,23 @@ In particular, \texttt{BroadcastReceiverVisitor} employs the \texttt{visitMethod
 Finally, the \texttt{LifecycleIssuesRegistry} simply sends the \texttt{Issue} objects (defined as static fields in the detector classes) to the Lint tool.
 
 \subsection{Evaluation}
+\fxnote*{New}{
+\subsubsection{General Properties}
+\begin{itemize}
+	\item Applicability: the static lifecycle tests target a specific subset of Android applications, i.e. those that employ the components linked to each detector. Moreover, they are useful mostly in the early stages of development to recognize inconsistencies when the developer is coding a particular Activity or Fragment, since the issues would likely be detected at the first run or test case via crashes or logged errors.
+	\item Effectiveness: static analysis in general can produce false negatives or false positives, so there may be situations where the developer is notified of a non-relevant problem or a real issue is not detected. For example, as mentioned in the previous sections, if the developer decides to employ the checked components in a non-standard way (e.g. register a BroadcastReceiver in an Activity and unregister it in another, passing the reference between them) the tool would wrongly recognize it as a problem.
+	\item Usability: the static checks are completely integrated in the Lint tool available in the development IDE, so each of them behaves exactly as the built-in detectors. For this reason, the issues are both displayed as a visual clue on the code (the detected problem is highlighted and a warning message is shown) and they are included on the project-wide analysis run on demand by the developer.
+	\item Performance: the Lint tool is usually able to analyze an entire project in a few seconds, checking for all the listed issues. The code of the developed lifecycle checks does not present any criticality from the performance point of view, since it employs only a AST Traversal technique on a single Java class.
+\end{itemize}
 
+\subsection{Real-World Application}
+Since the lifecycle static checks are effective mostly in the early stages of development, it is not an easy task to find significant real-world examples of applications that may benefit from them. However, searching for open-source applications on the GitHub platform, the following examples may be found:
+\begin{itemize}
+	\item InTheClear~\cite{InTheClear} is an application for alerting during emergencies. Before commit \textit{cabfc26}\footnote{https://github.com/SaferMobile/InTheClear/commit/cabfc2643bc5820e109433a8ae48f9f6a0788d9f} a BroadcastReceiver was registered but never unregistered in the \texttt{SMSSender} class. Using the static lifecycle tests the developers would have detected the issue immediately, without the need to receive the log notification and open the issue \#56\footnote{https://github.com/SaferMobile/InTheClear/issues/56}.
+	\item TrackBuddy~\cite{TrackBuddy} is an SMS tracker application. Commit \textit{007b6f7}\footnote{https://github.com/byteShaft/TrackBuddy/commit/007b6f7acb39e90d53ef38577d212927fae19d91} solves a bug in \texttt{LocationService}, which was missing a GoogleApiClient disconnection, a problem that would have been detected by lifecycle checks.
+	\item TODO add "mapbox-gl-native" if try/catch check developed
+\end{itemize}
+}
 
 
 \section{Dynamic Analysis}
@@ -1637,7 +1657,7 @@ The matchers that describe the type of events identified by each descriptor are 
 %..............................................................................%
 
 \bibliographystyle{unsrt}
-\bibliography{Bib/DEvA,Bib/CAFA,Bib/EventRacer,Bib/JUnit,Bib/Lint,Bib/Mockito,Bib/Oracles,Bib/ReactiveLocation,Bib/ReactiveNetwork,Bib/ReactiveSensors,Bib/Retrofit,Bib/Robolectric,Bib/RxAndroid,Bib/RxBinding,Bib/RxBroadcast,Bib/RxFileObserver,Bib/RxGoogleMaps,Bib/RxJava,Bib/RxLifecycle,Bib/RxPermissions,Bib/RxPreferences,Bib/RxWear,Bib/StorIO,Bib/THOR,Bib/CountingLogic,Bib/Hamcrest,Bib/Stats} 
+\bibliography{Bib/DEvA,Bib/CAFA,Bib/EventRacer,Bib/JUnit,Bib/Lint,Bib/Mockito,Bib/Oracles,Bib/ReactiveLocation,Bib/ReactiveNetwork,Bib/ReactiveSensors,Bib/Retrofit,Bib/Robolectric,Bib/RxAndroid,Bib/RxBinding,Bib/RxBroadcast,Bib/RxFileObserver,Bib/RxGoogleMaps,Bib/RxJava,Bib/RxLifecycle,Bib/RxPermissions,Bib/RxPreferences,Bib/RxWear,Bib/StorIO,Bib/THOR,Bib/CountingLogic,Bib/Hamcrest,Bib/Stats,Bib/InTheClear,Bib/TrackBuddy} 
 
 \end{document}
 
