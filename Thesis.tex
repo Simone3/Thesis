@@ -547,7 +547,7 @@ Finally, the \texttt{LifecycleIssuesRegistry} simply sends the \texttt{Issue} ob
 	\item Performance: the Lint tool is usually able to analyze an entire project in a few seconds, checking for all the listed issues. The code of the developed lifecycle checks does not present any criticality from the performance point of view, since it employs only a AST Traversal technique on a single Java class.
 \end{itemize}
 
-\subsection{Real-World Application}
+\subsubsection{Real-World Application}
 Since the lifecycle static checks are effective mostly in the early stages of development, it is not an easy task to find significant real-world examples of applications that may benefit from them. However, searching for open-source applications on the GitHub platform, the following examples may be found:
 \begin{itemize}
 	\item InTheClear~\cite{InTheClear} is an application for alerting during emergencies. Before commit \textit{cabfc26}\footnote{https://github.com/SaferMobile/InTheClear/commit/cabfc2643bc5820e109433a8ae48f9f6a0788d9f} a BroadcastReceiver was registered but never unregistered in the \texttt{SMSSender} class. Using the static lifecycle tests the developers would have detected the issue immediately, without the need to receive the log notification and open the issue \#56\footnote{https://github.com/SaferMobile/InTheClear/issues/56}.
@@ -653,7 +653,50 @@ The \texttt{RobolectricLifecycleTest} class inside the  \texttt{RobolectricLifec
 ActivityTestRule tests are covered by the \texttt{ActivityRuleLifecycleTest} class inside the \texttt{ActivityTestRuleLifecycleTesting} module. It implements the lifecycle methods using the Android \texttt{Instrumentation} class and provides the abstract method \texttt{getActivityTestRule()} to allow the developer to define the ActivityTestRule under test.
 
 \subsection{Evaluation}
+\fxnote*{New}{
+\subsubsection{General Properties}
+\begin{itemize}
+	\item Applicability: lifecycle tests have a wide applicability range, since the behavior of almost every Activity of an application is directly affected by its lifecycle. Moreover, the tests are available for ActivityTestRule unit/integration testing, Espresso UI testing and Robolectric unit testing, and so they can be applied in most of the testing environments employed in Android development.
+	\item Effectiveness: the tests correctly simulate the real behaviors of lifecycle transitions, allowing the developer to setup test cases that can effectively reveal criticalities.
+	\item Usability: to define the lifecycle test cases the developer only needs to inherit from the classes provided by the library and implement the abstract methods. In each of them, the complexity of handling the lifecycle transitions is completely hidden to the developer thanks to the callback mechanism, allowing to focus only on the actions and assertions to be performed during the test.
+	\item Performance: the overhead introduced by the lifecycle transitions handling is negligible, and so the time complexity of each test depends only on the actions and assertions defined by the developer.
+\end{itemize}
 
+\subsubsection{Real-World Application}
+To prove the lifecycle tests effectiveness, the library has been applied to WordPress~\cite{WordPressApp}, the Android application that allows to manage directly from mobile devices the websites created with the well-known content management system WordPress~\cite{WordPressCMS}.\bigskip \\
+The evaluation has been performed by applying the same lifecycle tests first on an old version of the application (at commit \textit{9f9cb12}\footnote{https://github.com/wordpress-mobile/WordPress-Android/commit/9f9cb12bb1d8a82d60897b5c3ff954c2f88de4f2} on December 6, 2015) and then on the latest version at the time of writing (at commit \textit{bfdf611}\footnote{https://github.com/wordpress-mobile/WordPress-Android/commit/bfdf611c6a37ddd1fad1980f73a00389b2e22677} on July 15, 2016). In the six months elapsed between the two versions several lifecycle issues were discovered and fixed, and so the idea is to show that the defined tests fail in the older version while they succeed in the newer one.\bigskip \\
+The test cases can be found in the repositories \textit{WordPress-Android-2015-12-06}~\cite{WordPress2015-12-06} and \textit{WordPress-Android-2016-07-15}~\cite{WordPress2016-07-15}, forks of the original repository of the application.\bigskip \\
+The defined tests are:
+\begin{itemize}
+	\item Loss of data in profile
+	\begin{itemize}
+		\item Bug Category: usability, correctness
+		\item Lifecycle Transition: rotation
+		\item Linked Issue: \#3608\footnote{https://github.com/wordpress-mobile/WordPress-Android/issues/3608}
+		\item Fixed In: pull request \#3676\footnote{https://github.com/wordpress-mobile/WordPress-Android/pull/3676} 
+		\item Problem Description: in the profile page, if the user typed a value (e.g. his/her name) and then rotated the device, the inserted data would be lost.
+		\item Test: the lifecycle test, defined in Espresso, exploits the rotation callback by first typing the name value and then, after the transition, asserting the input contents.
+	\end{itemize}
+	\item Blank post content
+	\begin{itemize}
+		\item Bug Category: correctness
+		\item Lifecycle Transition: pause/stop
+		\item Linked Issue: \#3575\footnote{https://github.com/wordpress-mobile/WordPress-Android/issues/3575}
+		\item Fixed In: pull request \#3577\footnote{https://github.com/wordpress-mobile/WordPress-Android/pull/3577} 
+		\item Problem Description: reading a long blog post, pausing and resuming the application caused most of the content to be invisible to the user.
+		\item Test: the Espresso lifecycle test opens a blog post, scrolls down and, after the pause, checks that all the content is displayed.
+	\end{itemize}
+	\item Unexpected page change
+	\begin{itemize}
+		\item Bug Category: usability
+		\item Lifecycle Transition: rotation
+		\item Linked Issue: \#3948\footnote{https://github.com/wordpress-mobile/WordPress-Android/issues/3948}
+		\item Fixed In: pull request \#4127\footnote{https://github.com/wordpress-mobile/WordPress-Android/pull/4127} 
+		\item Problem Description: in the settings page, if the user accessed the notifications-specific area and then rotated the device, he/she was redirected back to the general settings screen. 
+		\item Test: the Espresso lifecycle test first opens the settings page and clicks on the notifications section button, then after the rotation checks if the same page is still displayed.
+	\end{itemize}
+\end{itemize}
+}
 
 %..............................................................................%
 %.................................... EVENTS ..................................%
@@ -1657,7 +1700,7 @@ The matchers that describe the type of events identified by each descriptor are 
 %..............................................................................%
 
 \bibliographystyle{unsrt}
-\bibliography{Bib/DEvA,Bib/CAFA,Bib/EventRacer,Bib/JUnit,Bib/Lint,Bib/Mockito,Bib/Oracles,Bib/ReactiveLocation,Bib/ReactiveNetwork,Bib/ReactiveSensors,Bib/Retrofit,Bib/Robolectric,Bib/RxAndroid,Bib/RxBinding,Bib/RxBroadcast,Bib/RxFileObserver,Bib/RxGoogleMaps,Bib/RxJava,Bib/RxLifecycle,Bib/RxPermissions,Bib/RxPreferences,Bib/RxWear,Bib/StorIO,Bib/THOR,Bib/CountingLogic,Bib/Hamcrest,Bib/Stats,Bib/InTheClear,Bib/TrackBuddy} 
+\bibliography{Bib/DEvA,Bib/CAFA,Bib/EventRacer,Bib/JUnit,Bib/Lint,Bib/Mockito,Bib/Oracles,Bib/ReactiveLocation,Bib/ReactiveNetwork,Bib/ReactiveSensors,Bib/Retrofit,Bib/Robolectric,Bib/RxAndroid,Bib/RxBinding,Bib/RxBroadcast,Bib/RxFileObserver,Bib/RxGoogleMaps,Bib/RxJava,Bib/RxLifecycle,Bib/RxPermissions,Bib/RxPreferences,Bib/RxWear,Bib/StorIO,Bib/THOR,Bib/CountingLogic,Bib/Hamcrest,Bib/Stats,Bib/InTheClear,Bib/TrackBuddy,Bib/WordPressApp,Bib/WordPressCMS,Bib/WordPress2015-12-06,Bib/WordPress2016-07-15} 
 
 \end{document}
 
