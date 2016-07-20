@@ -376,6 +376,29 @@ Android EventRacer~\cite{Bielik:2015:SRD:2858965.2814303} is an improvement of C
 \end{itemize}
 Moreover, EventRacer analyzes an application in much less time than CAFA: building the Happens-Before relationship graph has $\mathcal{O}(n^2)$ time complexity instead of $\mathcal{O}(n^3)$. The tool is also publicly available as an online tester or an offline application (only available for Linux systems). One disadvantage of the EventRacer approach is that the implementation requires to modify the Android framework in order to access low-level information and, for this reason, it is only available for Android 4.4, which limits the options of the developer for testing other versions of the OS. Another critical aspect of the tool is that detection is performed by running the application in an emulator feeding it with pseudo-random events: this approach may skip several sections of an application, especially if they are not immediately available (e.g. sign-in).
 
+\fxnote*{New}{
+\subsection{ERVA}
+The tool ERVA~\cite{Hu:2016:AVR:2931037.2931069} is a further step forward in event race detection. The authors note that the previous tools have several drawbacks like:
+\begin{itemize}
+	\item They are prone to false positives, due to:
+	\begin{itemize}
+		\item Imprecise Android Component Model: for example, EventRacer may recognize the callbacks \texttt{onCreateView()} and \texttt{onResume()} as racy, but the Android lifecycle documentation states that they are always called in that order.
+		\item Implicit Happens-before Relation: two Runnable objects, if posted to the same Handler, are executed in a FIFO order, but EventRacer may wrongly assume that they can be concurrent.
+	\end{itemize}
+	\item They cannot verify if it a benign or harmful race. A benign race can be:
+	\begin{itemize}
+		\item Control Flow Protection: if the access to a variable is protected by an \texttt{if} statement that first checks whether it is null, even if a race occurs there is no impact on the execution.
+		\item No State Difference: if the program does not depend on the execution order (e.g. a counter is decreased in the same way by several tasks) a race is meaningless.
+	\end{itemize}
+	\item They do not give developers a way to reproduce the race.
+\end{itemize}
+ERVA tries to address these issues by splitting the analysis in two phases:
+\begin{itemize}
+	\item Race detection: the tool runs EventRacer itself to collect all the detected races, recording in the meanwhile replay and synchronization information. With the recorded data, ERVA determines if the race is a false positive.
+	\item Race verification: the tool tries to verify if the detected true positives are benign or harmful races. To do so, it exploits the replay data to reproduce the execution by changing the order of some events: if the flipping has no side effect, then the race is benign.
+\end{itemize}
+}
+
 \subsection{DEvA}
 A completely different approach for race detection is provided by DEvA~\cite{Safi:2015:DEA:2786805.2786836}. The idea of the tool is to base its search on static code analysis rather than dynamic analysis: this approach guarantees more code coverage and completeness. DEvA focuses on a specific type of problem called Event Anomalies: processing of two or more events results in accesses to the same memory location and at least one of those is a write access (note that the use-free races analyzed by CAFA are a subclass of this type of issue). The idea of the tool is to identify variables that may be modified as a result of receiving an event (i.e. a potential Event Anomaly) using the Control Flow Graph of the application (i.e. all paths that may be traversed in the application during its execution). The tools receives as input from the developer:
 \begin{itemize}
@@ -538,7 +561,7 @@ In particular, \texttt{BroadcastReceiverVisitor} employs the \texttt{visitMethod
 Finally, the \texttt{LifecycleIssuesRegistry} simply sends the \texttt{Issue} objects (defined as static fields in the detector classes) to the Lint tool.
 
 \subsection{Evaluation}
-\fxnote*{New}{
+
 \subsubsection{General Properties}
 \begin{itemize}
 	\item Applicability: the static lifecycle tests target a specific subset of Android applications, i.e. those that employ the components linked to each detector. Moreover, they are useful mostly in the early stages of development to recognize inconsistencies when the developer is coding a particular Activity or Fragment, since the issues would likely be detected at the first run or test case via crashes or logged errors.
@@ -554,7 +577,7 @@ Since the lifecycle static checks are effective mostly in the early stages of de
 	\item TrackBuddy~\cite{TrackBuddy} is an SMS tracker application. Commit \textit{007b6f7}\footnote{https://github.com/byteShaft/TrackBuddy/commit/007b6f7acb39e90d53ef38577d212927fae19d91} solves a bug in \texttt{LocationService}, which was missing a GoogleApiClient disconnection, a problem that would have been detected by lifecycle checks.
 	\item TODO add "mapbox-gl-native" if try/catch check developed
 \end{itemize}
-}
+
 
 
 \section{Dynamic Analysis}
@@ -653,7 +676,7 @@ The \texttt{RobolectricLifecycleTest} class inside the  \texttt{RobolectricLifec
 ActivityTestRule tests are covered by the \texttt{ActivityRuleLifecycleTest} class inside the \texttt{ActivityTestRuleLifecycleTesting} module. It implements the lifecycle methods using the Android \texttt{Instrumentation} class and provides the abstract method \texttt{getActivityTestRule()} to allow the developer to define the ActivityTestRule under test.
 
 \subsection{Evaluation}
-\fxnote*{New}{
+
 \subsubsection{General Properties}
 \begin{itemize}
 	\item Applicability: lifecycle tests have a wide applicability range, since the behavior of almost every Activity of an application is directly affected by its lifecycle. Moreover, the tests are available for ActivityTestRule unit/integration testing, Espresso UI testing and Robolectric unit testing, and so they can be applied in most of the testing environments employed in Android development.
@@ -696,7 +719,7 @@ The defined tests are:
 		\item Test: the Espresso lifecycle test first opens the settings page and clicks on the notifications section button, then after the rotation checks if the same page is still displayed.
 	\end{itemize}
 \end{itemize}
-}
+
 
 %..............................................................................%
 %.................................... EVENTS ..................................%
@@ -787,7 +810,7 @@ The first type of checks focuses on single events at a time: for example we may 
   	\begin{lstlisting}
 	/* Check race condition with maps */
 	anEventThat(isMarkerPlacement())
-		.canHappenOnlyAfter(anEventThat(isMapReady()))
+		.canHappenOnlyAfter(anEventThat(isMapReady()));
 	\end{lstlisting}
 	
   	\\ \hline  	
@@ -838,7 +861,7 @@ The first type of checks focuses on single events at a time: for example we may 
   	\begin{lstlisting}
 	/* Can change form input only before it is submitted */
 	anEventThat(isTextChangeFrom(usernameTextView))
-		.canHappenOnlyBefore(anEventThat(isSubmitForm()))
+		.canHappenOnlyBefore(anEventThat(isSubmitForm()));
 	\end{lstlisting}
 	
   	\\ \hline  	
@@ -891,7 +914,7 @@ The first type of checks focuses on single events at a time: for example we may 
 	anEventThat(isSendBroadcast())
 		.canHappenOnlyBetween(
 			anEventThat(isServiceStart(mainService)),
-			anEventThat(isServiceStop(mainService)))
+			anEventThat(isServiceStop(mainService)));
 	\end{lstlisting}
 	
   	\\ \hline  	
@@ -954,7 +977,7 @@ First Order Logic specifications use the counting quantifiers~\cite{Pratt-Hartma
   	\begin{lstlisting}
 	/* If a location change happens, the text view must be updated exactly once */	
 	exactly(1).eventsWhereEach(isTextChangeFrom(locationTextView))
-		.mustHappenAfter(anEventThat(isLocationChange()))
+		.mustHappenAfter(anEventThat(isLocationChange()));
 	\end{lstlisting}
 	
   	\\ \hline  	
@@ -1005,7 +1028,7 @@ First Order Logic specifications use the counting quantifiers~\cite{Pratt-Hartma
   	\begin{lstlisting}
 	/* To setup the list of data the system must perform exactly 3 database queries */
 	exactly(3).eventsWhereEach(isDatabaseQuery())
-		.mustHappenBefore(anEventThat(isListSetup()))
+		.mustHappenBefore(anEventThat(isListSetup()));
 	\end{lstlisting}
 	
   	\\ \hline  	
@@ -1058,7 +1081,7 @@ First Order Logic specifications use the counting quantifiers~\cite{Pratt-Hartma
 	exactly(4).eventsWhereEach(isTextChangeFrom(myTextView))
 		.mustHappenBetween(
 			anEventThat(isActivityLifecycleEvent("onResume")),
-			anEventThat(isActivityLifecycleEvent("onPause")))
+			anEventThat(isActivityLifecycleEvent("onPause")));
 	\end{lstlisting}
 	
   	\\ \hline  	
@@ -1120,7 +1143,7 @@ indexOf(e, m, i) \equiv \exists_{=i} e' \Big( match(e', m) \land before(e', e) \
 			isFragmentBackstackPush(mainFragment),
 			isFragmentBackstackPush(languageFragment),
 			isFragmentBackstackPush(gameFragment),
-			isFragmentBackstackPop(mainFragment))
+			isFragmentBackstackPop(mainFragment));
 	\end{lstlisting}
 	
   	\\ \hline  	
@@ -1231,7 +1254,7 @@ ordered(com, e1, e2) \equiv \bigg( \Big( com<0 \Rightarrow before(e1, e2) \Big) 
   
   	\begin{lstlisting}
 	/* The database must be opened sooner or later during the execution */
-	existsAnEventThat(isOpenDatabase())
+	existsAnEventThat(isOpenDatabase());
 	\end{lstlisting}
 	
   	\\ \hline  	
@@ -1282,7 +1305,7 @@ ordered(com, e1, e2) \equiv \bigg( \Big( com<0 \Rightarrow before(e1, e2) \Big) 
   	\begin{lstlisting}
 	/* In this execution the system sends exactly 10 broadcasts */
 	exist(exactly(10))
-		.eventsWhereEach(isSendBroadcast())
+		.eventsWhereEach(isSendBroadcast());
 	\end{lstlisting}
 	
   	\\ \hline  	
@@ -1342,7 +1365,7 @@ These constructs allow to specify the standard logic connectives between one or 
 		anEventThat(isStartService())
 			.canHappenOnlyAfter(isClickOn(startButton)),
 		exactly(1).eventsWhereEach(isStartService())
-			.mustHappenAfter(isClickOn(startButton)))
+			.mustHappenAfter(isClickOn(startButton)));
 	\end{lstlisting}
 	
   	\\ \hline  	
@@ -1447,7 +1470,7 @@ These constructs allow to specify the standard logic connectives between one or 
   	\begin{lstlisting}
 	/* In this execution the email draft cannot be saved */		
 	isNotSatisfied(
-		existsAnEventThat(isSaveDraft()))
+		existsAnEventThat(isSaveDraft()));
 	\end{lstlisting}
 	
   	\\ \hline  	
@@ -1502,7 +1525,7 @@ These constructs allow to specify the standard logic connectives between one or 
 				.eventsWhereEach(isListOrderChange()))
 		.then(
 			exist(exactly(1))
-				.eventsWhereEach(isSaveDatabase()))
+				.eventsWhereEach(isSaveDatabase()));
 	\end{lstlisting}
 	
   	\\ \hline  	
@@ -1555,7 +1578,7 @@ These constructs allow to specify the standard logic connectives between one or 
 	isSatisfied(
 			existsAnEventThat(isClickOn(sendButton)))
 		.iff(
-			existsAnEventThat(isSendEmail()))
+			existsAnEventThat(isSendEmail()));
 	\end{lstlisting}
 	
   	\\ \hline  	
@@ -1700,7 +1723,7 @@ The matchers that describe the type of events identified by each descriptor are 
 %..............................................................................%
 
 \bibliographystyle{unsrt}
-\bibliography{Bib/DEvA,Bib/CAFA,Bib/EventRacer,Bib/JUnit,Bib/Lint,Bib/Mockito,Bib/Oracles,Bib/ReactiveLocation,Bib/ReactiveNetwork,Bib/ReactiveSensors,Bib/Retrofit,Bib/Robolectric,Bib/RxAndroid,Bib/RxBinding,Bib/RxBroadcast,Bib/RxFileObserver,Bib/RxGoogleMaps,Bib/RxJava,Bib/RxLifecycle,Bib/RxPermissions,Bib/RxPreferences,Bib/RxWear,Bib/StorIO,Bib/THOR,Bib/CountingLogic,Bib/Hamcrest,Bib/Stats,Bib/InTheClear,Bib/TrackBuddy,Bib/WordPressApp,Bib/WordPressCMS,Bib/WordPress2015-12-06,Bib/WordPress2016-07-15} 
+\bibliography{Bib/DEvA,Bib/CAFA,Bib/EventRacer,Bib/JUnit,Bib/Lint,Bib/Mockito,Bib/Oracles,Bib/ReactiveLocation,Bib/ReactiveNetwork,Bib/ReactiveSensors,Bib/Retrofit,Bib/Robolectric,Bib/RxAndroid,Bib/RxBinding,Bib/RxBroadcast,Bib/RxFileObserver,Bib/RxGoogleMaps,Bib/RxJava,Bib/RxLifecycle,Bib/RxPermissions,Bib/RxPreferences,Bib/RxWear,Bib/StorIO,Bib/THOR,Bib/CountingLogic,Bib/Hamcrest,Bib/Stats,Bib/InTheClear,Bib/TrackBuddy,Bib/WordPressApp,Bib/WordPressCMS,Bib/WordPress2015-12-06,Bib/WordPress2016-07-15,Bib/ERVA} 
 
 \end{document}
 
