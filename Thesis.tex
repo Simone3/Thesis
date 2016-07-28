@@ -897,14 +897,14 @@ The first type of checks focuses on single events at a time: for example we may 
   	 
   \rotatebox[origin=c]{90}{\textbf{ Description }} & 
   
-  	Checks that the events that match \texttt{m1} happen only between any pair of events that match \texttt{m2} and \texttt{m3} respectively, i.e. there cannot be an event that matches \texttt{m1} before the first event that matches \texttt{m2} or after the last event that matches \texttt{m3}. 
+  	Checks that the events that match \texttt{m1} happen only between an event that matches \texttt{m2} and an event that matches \texttt{m3}, i.e. there cannot be an event that matches \texttt{m1} outside a pair \texttt{m2}-\texttt{m3}. 
 	
   	\\ \hline
 
   \rotatebox[origin=c]{90}{\textbf{ FOL }} & 
   
   	\begin{multline*}
-	\forall e1 \bigg( match(e1, m1) \Rightarrow \exists e2, e3 \Big( match(e2, m2) \land match(e3, m3) \\ \land between(e2, e1, e3) \Big) \bigg)
+	\forall e1 \Bigg( match(e1, m1) \Rightarrow \exists e2, e3 \bigg( match(e2, m2) \land match(e3, m3) \\ \land between(e2, e1, e3) \land \neg \exists e3' \Big( match(e3', m3) \land \big( between(e2, e3', e1) \\ \lor between(e1, e3', e3) \big) \Big) \bigg) \Bigg)
 	\end{multline*}
 	
   	\\ \hline
@@ -1222,6 +1222,10 @@ ordered(com, e1, e2) \equiv \bigg( \Big( com<0 \Rightarrow before(e1, e2) \Big) 
 \egroup
 \end{center}
 
+\subsection{Existential Checks}
+
+These checks assess the existence of one or more events in the stream. Similarly to the previous categories, only the formulas for "exactly" will be formalized.
+
 \subsubsection{Exists An Event}
 
 \begin{center}
@@ -1290,7 +1294,7 @@ ordered(com, e1, e2) \equiv \bigg( \Big( com<0 \Rightarrow before(e1, e2) \Big) 
   	 
   \rotatebox[origin=c]{90}{\textbf{ Description }} & 
   
-  	Checks that \textit{all} the events that match \texttt{m} are exactly \texttt{n}.
+  	Checks that the events that match \texttt{m} are exactly \texttt{n} in the whole stream.
 	
   	\\ \hline
 
@@ -1323,7 +1327,169 @@ ordered(com, e1, e2) \equiv \bigg( \Big( com<0 \Rightarrow before(e1, e2) \Big) 
 \egroup
 \end{center}
 
-In the same way seen in the previous section, the checks for "at most" and "at least" can be derived by analogy.
+\fxnote*{New}{
+\subsubsection{Exist Events After}}
+
+\begin{center}
+\bgroup
+\def\arraystretch{1.5}%
+\begin{longtable}{ | m{0.3cm} | m{15cm} | }
+  \hline
+  
+  \rotatebox[origin=c]{90}{\textbf{ Structure }} & 
+  
+  	\begin{lstlisting}
+	exist(after(anEventThat(m2)), exactly(n)).eventsWhereEach(m1)
+	\end{lstlisting}
+	
+  	\\ \hline
+  	 
+  \rotatebox[origin=c]{90}{\textbf{ Description }} & 
+  
+  	Similar to the unbounded existential quantifier described in the previous section but with a restriction on the validity interval: exactly \texttt{n} events that match \texttt{m1} must exist exclusively after \textit{an} event that matches \texttt{m2}.
+	
+  	\\ \hline
+
+  \rotatebox[origin=c]{90}{\textbf{ FOL }} & 
+  
+  	\begin{multline*}
+	\exists_{=n} e1 \Bigg( match(e1, m1) \land \bigg( \exists e2 \Big( match(e2, m2) \land before(e2, e1) \land \\ \neg \exists e2' \big( match(e2', m2) \land between(e2, e2', e1) \big) \Big) \bigg) \Bigg)
+	\end{multline*}
+	
+  	\\ \hline
+
+  \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
+  
+	\raisebox{-200pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide16.PNG}}
+	
+	
+  	\\ \hline
+  	
+  \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
+  
+  	\begin{lstlisting}
+	/* At least one click must be followed by a broadcast */
+	exist(
+		after(anEventThat(isClickOn(myButton))),
+		exactly(1))
+			.eventsWhereEach(isSendBroadcast());
+	\end{lstlisting}
+	
+  	\\ \hline  	
+  	 
+\end{longtable}
+\egroup
+\end{center}
+
+\fxnote*{New}{
+\subsubsection{Exist Events Before}}
+
+\begin{center}
+\bgroup
+\def\arraystretch{1.5}%
+\begin{longtable}{ | m{0.3cm} | m{15cm} | }
+  \hline
+  
+  \rotatebox[origin=c]{90}{\textbf{ Structure }} & 
+  
+  	\begin{lstlisting}
+	exist(before(anEventThat(m2)), exactly(n)).eventsWhereEach(m1)
+	\end{lstlisting}
+	
+  	\\ \hline
+  	 
+  \rotatebox[origin=c]{90}{\textbf{ Description }} & 
+  
+  	Similar to the unbounded existential quantifier but with a restriction on the validity interval: exactly \texttt{n} events that match \texttt{m1} must exist exclusively before \textit{an} event that matches \texttt{m2}.
+	
+  	\\ \hline
+
+  \rotatebox[origin=c]{90}{\textbf{ FOL }} & 
+  
+  	\begin{multline*}
+	\exists_{=n} e1 \Bigg( match(e1, m1) \land \bigg( \exists e2 \Big( match(e2, m2) \land before(e1, e2) \land \\ \neg \exists e2' \big( match(e2', m2) \land between(e1, e2', e2) \big) \Big) \bigg) \Bigg)
+	\end{multline*}
+	
+  	\\ \hline
+
+  \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
+  
+	\raisebox{-200pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide17.PNG}}
+	
+	
+  	\\ \hline
+  	
+  \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
+  
+  	\begin{lstlisting}
+	/* At least once, the service starts after a fragment initialization */
+	exist(
+		before(anEventThat(isStartService())),
+		exactly(1))
+			.eventsWhereEach(isFragmentLifecycleEvent("onCreate"));
+	\end{lstlisting}
+	
+  	\\ \hline  	
+  	 
+\end{longtable}
+\egroup
+\end{center}
+
+\fxnote*{New}{
+\subsubsection{Exist Events Between}}
+
+\begin{center}
+\bgroup
+\def\arraystretch{1.5}%
+\begin{longtable}{ | m{0.3cm} | m{15cm} | }
+  \hline
+  
+  \rotatebox[origin=c]{90}{\textbf{ Structure }} & 
+  
+  	\begin{lstlisting}
+	exist(between(anEventThat(m2), anEventThat(m3)), exactly(n)).eventsWhereEach(m1)
+	\end{lstlisting}
+	
+  	\\ \hline
+  	 
+  \rotatebox[origin=c]{90}{\textbf{ Description }} & 
+  
+  	Similar to the unbounded existential quantifier but with a restriction on the validity interval: exactly \texttt{n} events that match \texttt{m1} must exist exclusively between \textit{a} pair of events where the first matches \texttt{m2} and the second matches \texttt{m3}.
+	
+  	\\ \hline
+
+  \rotatebox[origin=c]{90}{\textbf{ FOL }} & 
+  
+  	\begin{multline*}
+	\exists_{=n} e1 \Bigg( match(e1, m1) \land \bigg( \exists e2, e3 \Big( match(e2, m2) \land match(e3, m3) \land \\ between(e2, e1, e3) \land \neg \exists e2', e3' \big( match(e2', m2) \land between(e2, e2', e3) \lor \\ match(e3', m3) \land between(e2, e3', e3) \big) \Big) \bigg) \Bigg)
+	\end{multline*}
+	
+  	\\ \hline
+
+  \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
+  
+	\raisebox{-200pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide18.PNG}}
+	
+	
+  	\\ \hline
+  	
+  \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
+  
+  	\begin{lstlisting}
+	/* At least once, the service must query the database during its execution */
+	exist(
+		between(anEventThat(isStartService()),
+				anEventThat(isStopService())),
+		exactly(3))
+			.eventsWhereEach(isDatabaseQuery());
+	\end{lstlisting}
+	
+  	\\ \hline  	
+  	 
+\end{longtable}
+\egroup
+\end{center}
+
 
 \subsection{Connectives between Checks}
 
@@ -1709,7 +1875,8 @@ Connectives between checks are implementations of \texttt{CheckConnective}, whic
 
 \subsection{Descriptors}
 The descriptors are subclasses of \texttt{AbstractEventDescriptor}. \texttt{AnEventThat} (single event) and \texttt{AllEventsWhereEach} (all the events in the whole stream) provide static constructors, while \texttt{EventsWhereEach} descriptors (sets of events) do not provide one because they are built starting from a quantifier, e.g. \texttt{exactly(10).eventsWhereEach(...)}.\medskip \\
-The \texttt{Exist} class provides the means to express the existential quantifiers, i.e. \texttt{existsAnEventThat(...)} and \texttt{exist(...).eventsWhereEach(...)}.\medskip \\
+The \texttt{Exist} class provides the means to express the existential quantifiers, i.e. \texttt{existsAnEventThat(...)} and \texttt{exist(...).eventsWhereEach(...)}. \fxnote*{New}{The latter type uses quantifiers and constraints to define the cardinality of the set in the first case and the possible validity interval in the second.\medskip \\
+Existential constraints are subclasses of \texttt{AbstractExistConstraint}. They simply implement an abstract method to define the constraint logic and provide a static method to be used in the existential check expressions.}\medskip \\
 Quantifiers are subclasses of \texttt{AbstractQuantifier}. Each of them uses an internal counter and overrides several methods like \texttt{isConditionMet()} and \texttt{canStopCurrentComputation()} to implement its logic. All of them have a private constructor and a static method like the descriptors.\medskip \\
 The matchers that describe the type of events identified by each descriptor are implemented using the external library JavaHamcrest~\cite{Hamcrest}, a well known way to describe objects. The library provides several matchers on the most common objects (like Strings, e.g. \texttt{isEmptyString()}, \texttt{startsWith(String)}, etc.), some connectives to compose matchers (e.g. \texttt{allOf(Matcher...)}) and the means to implement custom matchers, which have been used to define matchers for the events.
 
