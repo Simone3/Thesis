@@ -1806,7 +1806,7 @@ The advantages of the Rx paradigm are:
 \begin{itemize}
 	\item Cross-Platform: it is available in many programming languages, like RxJava, RxSwift, RxJS, RxPHP, etc.
 	\item Can be used for any application, from Front-End (e.g. UI events and API responses) to Back-End (e.g. asynchronicity and concurrency).
-	\item Operators usually make computations less verbose and more readable
+	\item Operators usually make computations less verbose and more readable.
 	\item Error handling: if an error occurs in one of the steps of the computation the exception is automatically intercepted by Rx and forwarded to the user via appropriate callbacks.
 	\item Easy concurrency: Rx allows to easily specify in which threads the components should be run, without worrying about implementation details.
 	\item Extensible: a developer can define custom Observables, Operators and Subscribers to achieve anything an application may require.
@@ -1823,7 +1823,7 @@ In addition to implementing all functionalities of ReactiveX paradigm (Observabl
 \end{itemize} \bigskip
 RxAndroid~\cite{RxAndroid} is a RxJava module that provides specific bindings for the Android platform, for example to easily specify the main (UI) thread as the observing thread or, more in general, a custom Looper. RxAndroid can in turn be extended by other modules, some of which are listed in the next section.
 
-\subsection{Events Observable in Android}
+\subsection{Events Observable in Android}\label{android_observables}
 Several modules allow Android developers to observe many events inside an application. For example, we can observe:
 \begin{itemize}
 	\item UI Widgets: RxBinding~\cite{RxBinding} module allows to observe user inputs or changes on UI widgets like TextView (e.g. clicks, text change), app bar menu (e.g. option selected), etc.
@@ -1861,7 +1861,7 @@ Note that the \texttt{EventMonitor} observes the events on the thread specified 
 The \texttt{EventMonitor} can be used as:
 \begin{itemize}
 	\item Runtime monitor during the manual debugging phase of the application development: just like the standard assertions placed in production code, the developer can use the monitor for example inside an activity to log all events and the results of the checks.
-	\item Testing mechanism: the developer can start the monitor at the beginning of a test and add some specific checks, then execute the actions allowed by the chosen testing framework and finally stop the monitor at the end. The monitor works as a standard assertion mechanism, making the test fail in case a consistency check is not successful. Note that this mechanism, since it's not framework-specific, can be used for any type of test, from unit to UI, and with any library, provided that it is able to observe all the required events in the application.
+	\item Testing mechanism: the developer can start the monitor at the beginning of a test and add some specific checks, then execute the actions allowed by the chosen testing framework and finally stop the monitor at the end. The monitor works as a standard assertion mechanism, making the test fail in case a consistency check is not successful. Note that this mechanism, since it's not framework-specific, can be used for any type of test, from unit to UI, and with any library.
 \end{itemize}
 
 \subsection{Event Generators}
@@ -1882,8 +1882,78 @@ The matchers that describe the type of events identified by each descriptor are 
 
 \section{Evaluation}
 \fxnote*{New}{
+\subsection{Applicability}
+The event-based testing library is most suitable for applications that are characterized by a high number of different operations that can possibly run concurrently. This usually means applications that heavily employ the network (i.e. that query the web in background), the device sensors (e.g. receive GPS events to update a map) and/or, in general, that perform several sub-routines in parallel thanks to Services and threads.\medskip \\
+However, the library may be applicable also to more "sequential" applications, especially for the event counting and ordering capabilities, e.g. the developer might be interested in easily quantifying the number of click events during a particular execution.\medskip \\
+Event-based testing is especially useful for applications that already use the ReactiveX library in production code since the Observables to generate the events are already built.\medskip \\
+The library can be applied both as a testing support tool, expressing conditions during test cases built in Espresso, Robolectric or any other framework, or as a debugging tool directly in production code in the early stages of development, to observe how the event stream is built.
+
+\subsection{Effectiveness}
+To discuss the effectiveness of the event monitor tool we can focus on three aspects:
+\begin{itemize}
+	\item Event Stream Composition: it may be noted that, thanks to the available listeners and RxAndroid extensions, many events can be easily observed in an Android application, like user interaction on most View components, sensor data, broadcasts, etc. However, there are many events that cannot easily be observed, mainly because Android does not provide any listener on which to build the ReactiveX Observable (e.g. no listener is available to see when a View element becomes visible or hidden) or because it only allows to manage a single listener (e.g. only one focus change listener is allowed per View component and, if the developer uses one inside the production code of the application, RxJava cannot use another to build the Observable). This of course can limit the event stream composition and, as a consequence, the possible checks that can be expressed on it.
+	\item Assertions Language Expressiveness: the proposed assertion language allows to express temporal constraints (events can happen only after/before/between other events), causality (events must happen after/before/between other events), existence, ordering and quantification among events, as well as correlating check results via logic connectives. This expressiveness allows the developer to verify the most relevant conditions on the event stream. However, in the current implementation, the language does not allow to express more complex assertions like TODO("correlated" connective parts)
+	\item Results Handling: the result of each consistency check contains an outcome (success, failure or warning) and a report message to understand its meaning. For example, the result of the check asserting that a text change event can only happen after a fragment started can contain the report \textit{The event $\left\{\mbox{Text change "MyText" from TextView1}\right\}$ was found before an event that is a fragment lifecycle event ON\_START}, which clearly shows what event made the check fail. Moreover, the event monitor offers the possibility of printing the whole event stream as it was registered during the execution, allowing the developer to analyze it to find possible causes of a bug.
+\end{itemize}
+
+\subsection{Usability}
+The generation effort to build the event stream depends on the specific application and on what the developer wants to achieve. If the events that need to be observed are covered by one of the RxAndroid extensions listed in section \ref{android_observables} the generation of the Observables is straightforward. However, if the developer needs to observe Android events not covered by any extension or events specific to the application under test, it may be required to build custom Observables. Usually, creating a custom Observable is not a complex task because of the RxJava library support, but in some cases it may require some effort.\medskip \\
+With regard to the consistency checks, the effort required for their specification is mostly due to the "logic" approach. Developers are used to express sequential conditions on the current state of the component under test, so they might find difficult to adapt to the temporal assertions language, that requires to specify conditions that must hold throughout the entire test execution. Nevertheless, care has been taken to offer a language as close as possible to the English language, to allow the developers to easily write and understand the meaning of a check at first glance.\medskip \\
+Finally, it may be noted that the library is not framework-specific. This means that it can be easily employed in any testing framework, like Espresso, Robolectric or the built-in instrumented unit testing, provided that it is able to observe all the required events in the application
+
+\subsection{Performance}
+The performance overhead introduced by the event-based testing library is, in general, negligible. The RxJava library provides a very lightweight and scalable event handling system and the implementation of the checks as Subscribers that perform very simple operations at each event of the stream make sure that in most situations the performance is not an issue. Moreover, the check logic is implemented in a separate thread from the main UI thread of the Android application, in order not to decrease the app responsiveness.\medskip \\
+It can also be noted that is some situations it may be required to edit the production code to insert custom event firing, when a listener is not available. This, however, does not create any issue when the application is run outside the event-based test case. If the \texttt{EventMonitor} component is not initialized, any call to add observables, checks or fire custom events is ignored and so the performance is not degraded. Moreover, it is possible to completely remove these calls in "release" builds (e.g. the application is made available on the Play Store) with tools like ProGuard~\cite{ProGuard}.
+
+\subsection{Extensibility}
+The library can be extended by the developer to adapt it to the specific needs of the application under test. In particular, a developer can implement:
+\begin{itemize}
+	\item Custom Events and Matchers: it is enough to extend the \texttt{Event} class, providing any parameter and Hamcrest matcher required.
+	\item Custom Observables: to inject custom events in the stream the developer just needs to create a ReactiveX Observable.
+	\item Custom Subscribers: the library provides simple Subscribers for both the event stream and the check results, but the developer can build custom implementations by simply implementing a ReactiveX Subscriber. This allows to manage the event monitor results in any way, from logging to saving them in a database or file.
+	\item Custom Checks: it is also possible to build customized checks and check connectives, by implementing a ReactiveX Subscriber that, receiving all the events of the stream, keeps a state and returns one final result.
+\end{itemize}
+
+\subsection{Comparison with Testing Frameworks}
+Comparing temporal assertions with the standard Android testing frameworks like Espresso, Robolectric and the instrumented unit tests, event-based testing approach can be seen both as an extension and as an alternative.\medskip \\
+It is an extension because the event monitor is a tool that needs to be executed during a standard test case, since it is necessary to define the tested components and to define the actions (e.g. clicks) that the test case must perform.\medskip \\
+It is, however, also an alternative to the standard assertions that can be used during these tests. If we consider the example of assessing that an AsyncTask starts only after the user clicks on a button, it can be easily expressed with a temporal assertion but it is very complex to express with standard assertions. It would require for example to continuously poll the AsyncTask variable before the click action to check if the task is running (or to manually setup a test listener invoked when the task starts) and, using boolean variables, assert that one is always false before the other becomes true.
+
+\subsection{Comparison with Race Detection Tools}
+Comparing the proposed solution with race detectors like EventRacer and DEvA, it is first important to stress the fact that the approach is different. The mentioned tools try to detect possible race conditions, either dynamically or statically, without requiring the developer to write any test case. In the event-based testing library, instead, the focus is on manually generated test cases that allow to verify conditions on the event stream. For this reason, event-based testing is proposed as a complementary tool, and not as an alternative.\medskip \\
+From the point of view of race conditions, it can be noticed that the two approaches mostly focus on different types races.
+\begin{itemize}
+	\item EventRacer and DEvA focus their attention mainly on data races, i.e. they detect when two or more callbacks that use the same variable may be in conflict. If we consider the example of a button click callback where a Service is invoked and a connection callback where the Service is initialized, a race might be detected by the tools. In this example, it does not necessarily mean that the click callback cannot happen before the connection one, but just that the developer should handle that situation, e.g. by checking if the Service variable is null in the click callback before using it and, if so, just show a message to the user.
+	\item The event-based testing approach, instead, focuses on races between events that cannot be verified in any possible execution, i.e. specifying that a given event can happen only after/before/between other given events. An example of this can be the situation where the application logic imposes that text change events can only happen after the user clicks on a given button.
+\end{itemize}
+Given this distinction, we can have races that:
+\begin{itemize}
+	\item Can only be recognized by race detection tools: the example of the click-connection race cannot be expressed with temporal assertions since the two callbacks may happen in any order.
+	\item Can only be tested by the event-based approach: the example of the text changes after the click cannot be recognized by the race detectors since there is no variable in common between the click and the text change callbacks.
+	\item Can be both recognized by race detectors and tested with the event-based approach: an example of this is the event of placing a marker on a map when this has not been initialized yet. These two events generated by the application without user interaction must never be in the wrong order, otherwise the application might crash or result in the marker not being placed on the map. This condition can be expressed with a temporal assertion and, since we have a common variable (the map object), it may be recognized by race detectors.
+\end{itemize}\medskip
+Moreover, with the proposed library the developer is able to focus on events in general, and not only on race conditions like the aforementioned tools. This means that there is the possibility of looking at the event stream generated by an execution from a broader perspective, being also able to express conditions on existence, ordering and quantification of events.
+
+\subsection{Real-World Application}
+As a real-world example of event-based testing application, the same app employed in the dynamic lifecycle tests evaluation was chosen, WordPress for Android. In this case, the idea is to define some temporal assertions on the latest version at the time of writing~\cite{WordPress2016-07-15}, to discuss the expressiveness of the language, the generation effort and the types of events that can be observed.\medskip \\
+In particular, this evaluation focuses on the \texttt{EditPostActivity}, which allows the users to write and publish a post on their blog. The Activity contains instances of \texttt{EditorFragment}, which manage the fields for writing the post content, and uses the \texttt{PostUploadService} to publish the post and the \texttt{MediaUploadService} to add an image or video to the content.
+
+\subsubsection{Structure}
+- test, environment, when monitor starts, etc.
+
+\subsubsection{Events}
+- list events, saying which are custom. Effort to write observables
+
+\subsubsection{Checks}
+- list checks with explanation
+
+\subsection{Check Results}
+- show the outcomes with the messages
+- + list of all events?
 
 }
+
+
 
 %..............................................................................%
 %................................. CONCLUSION .................................%
@@ -1902,7 +1972,7 @@ The matchers that describe the type of events identified by each descriptor are 
 %..............................................................................%
 
 \bibliographystyle{unsrt}
-\bibliography{Bib/DEvA,Bib/CAFA,Bib/EventRacer,Bib/JUnit,Bib/Lint,Bib/Mockito,Bib/Oracles,Bib/ReactiveLocation,Bib/ReactiveNetwork,Bib/ReactiveSensors,Bib/Retrofit,Bib/Robolectric,Bib/RxAndroid,Bib/RxBinding,Bib/RxBroadcast,Bib/RxFileObserver,Bib/RxGoogleMaps,Bib/RxJava,Bib/RxLifecycle,Bib/RxPermissions,Bib/RxPreferences,Bib/RxWear,Bib/StorIO,Bib/THOR,Bib/CountingLogic,Bib/Hamcrest,Bib/Stats,Bib/InTheClear,Bib/TrackBuddy,Bib/WordPressApp,Bib/WordPressCMS,Bib/WordPress2015-12-06,Bib/WordPress2016-07-15,Bib/ERVA,Bib/SoftwareTestingAndAnalysis,Bib/Espresso,Bib/UIAutomator,Bib/monkeyrunner,Bib/UIExerciserMonkey} 
+\bibliography{Bib/DEvA,Bib/CAFA,Bib/EventRacer,Bib/JUnit,Bib/Lint,Bib/Mockito,Bib/Oracles,Bib/ReactiveLocation,Bib/ReactiveNetwork,Bib/ReactiveSensors,Bib/Retrofit,Bib/Robolectric,Bib/RxAndroid,Bib/RxBinding,Bib/RxBroadcast,Bib/RxFileObserver,Bib/RxGoogleMaps,Bib/RxJava,Bib/RxLifecycle,Bib/RxPermissions,Bib/RxPreferences,Bib/RxWear,Bib/StorIO,Bib/THOR,Bib/CountingLogic,Bib/Hamcrest,Bib/Stats,Bib/InTheClear,Bib/TrackBuddy,Bib/WordPressApp,Bib/WordPressCMS,Bib/WordPress2015-12-06,Bib/WordPress2016-07-15,Bib/ERVA,Bib/SoftwareTestingAndAnalysis,Bib/Espresso,Bib/UIAutomator,Bib/monkeyrunner,Bib/UIExerciserMonkey,Bib/ProGuard} 
 
 \end{document}
 
