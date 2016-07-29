@@ -427,7 +427,7 @@ However, the available means to thoroughly test an Activity lifecycle are lackin
 Given this context, the solution proposed by the first part of this thesis provides a more complete support to test a component lifecycle. In particular, two approaches for lifecycle testing are proposed: static analysis and dynamic analysis. The former analyzes the source code of the application to detect possible issues related to the handling of some components in accordance to the host Activity/Fragment lifecycle, for example failing to release a resource that was previously acquired. The dynamic approach, instead, provides to the developer a testing framework to easily drive the lifecycle, with pre-generated test cases for the most common transitions.\medskip \\
 The following sections present first the static approach and then the dynamic testing framework.
 
-\section{Static Analysis}
+\section{Static Analysis}\label{section_lifecycle_static}
 
 \subsection{Introduction}
 This section presents static lifecycle checks more in detail. First a short introduction of the main concepts of static program analysis is presented, then a detailed explanation of its application in lifecycle testing.
@@ -588,7 +588,7 @@ Since the lifecycle static checks are effective mostly in the early stages of de
 }
 
 
-\section{Dynamic Analysis}
+\section{Dynamic Analysis}\label{section_lifecycle_dynamic}
 
 \subsection{Lifecycle Test Cases}
 In this section a dynamic approach to lifecycle testing is presented, as opposed to the static technique described in the previous section.\medskip \\
@@ -1960,11 +1960,41 @@ In particular, this evaluation focuses on the \texttt{EditPostActivity}, which a
 %..............................................................................%
 
 \newpage
-\part{Conclusion}\label{part_conclusion}
+\part{Conclusions and Future Work}\label{part_conclusion}
 
-\section{Recap}
+\fxnote*{New}{
+\section{Conclusions}
+This thesis presented a possible testing approach that focuses on the events generated during the execution of an Android application. It analyzed first a subset of events, lifecycle transitions, and then focused on a more generic concept of events.\medskip \\
+Section \ref{section_lifecycle_static} proposed a static analysis approach for lifecycle testing, focusing on the management of selected components according to the host Activity/Fragment lifecycle. This approach is mainly useful in the early stages of development to warn the developer of possible criticalities, concerning performance or correctness.\medskip \\
+In section \ref{section_lifecycle_dynamic}, instead, it is reported the description of a dynamic approach for lifecycle testing. The idea is to provide a more complete support for lifecycle testing, hiding to the developers the complexity of driving the transitions and so allowing them to just focus on actions and assertions defined in the test case. The relevance of thoroughly testing an Activity or a Fragment with regard to its lifecycle is an important step to ensure confidence of correctness of the component, since lifecycle handling can often generate many issues.\medskip \\
+Part \ref{part_events} proposed an event-based testing library. The idea is to first build an event stream, observing different Android events defined by the developer, and then to express consistency checks on it, using a temporal assertions language. This allows to check for a specific type of race conditions and to assess existence, ordering and quantification of the events generated during the application execution.\medskip \\
+Finally, it is interesting to note that the three approaches proposed by the thesis can all be employed at the same time. For example, the developers may use the static lifecycle checks to easily spot problems while coding the application, then define test cases that exploit both temporal assertions and lifecycle tests to verify the consistency in the event stream during critical lifecycle transitions.
 
 \section{Future Work}
+Possible future extensions on the proposed work include:
+\begin{itemize}
+	\item For static lifecycle testing:
+	\begin{itemize}
+		\item Provide more static checks implementations, such as camera, location updates, etc.
+		\item Extend the static analysis scope by providing more complex checks. It may be possible not only to focus on release, double instantiation and best practices but also, for example, to build a complete graph of usages per each component with regard to the host Activity/Fragment lifecycle and to analyze it for possible critical aspects.
+		\item Provide a mechanism to automatically fix, whenever possible, the detected problems.
+	\end{itemize}
+	\item For dynamic lifecycle testing:
+	\begin{itemize}
+		\item Provide a better testing interface: for example it may be possible to avoid the subclassing and the implementation of the abstract callback methods by providing annotations that automatically generate the required tests. This would allow to define more tests of the same type (e.g. two rotation tests in the same test suite) and to avoid methods that return null if the developer is not interested in some test cases.
+		\item Provide testing not only for Activities but also for Fragments. This would require to create a new testing mechanism (e.g. Fragment Test Rule), since it is not provided by Android.
+		\item Automatically generate appropriate lifecycle test cases for selected Activities or Fragments, with automated assertion placement.
+	\end{itemize}
+	\item For event-based testing:
+	\begin{itemize}
+		\item Provide a better support for building the event stream, i.e. allow in some way to observe events that do not have an Android listener or to easily observe other events without the need to edit the production code (e.g. it may be possible to observe any callback invocation with aspect-oriented programming).
+		\item Increase the assertion language expressiveness, adding more checks and allowing to specify dependencies among sub-checks in check connectives.
+		\item Provide a better check results handling: for example, it may be possible to write a more complete report on the event monitor outcome, with cleaner interface (e.g. generating an HTML file) and more information to allow the developer to understand the problem more easily and to reproduce the behavior in other tests.
+		\item Evaluate the possibility of reordering the events in the stream (e.g. by automatically generating delays in the invocation of callbacks) to better test the consistency among events.
+		\item Provide automated assertion placement support, allowing the developer to start from relevant pre-generated temporal assertions.
+	\end{itemize}
+\end{itemize}
+}
 
 
 %..............................................................................%
