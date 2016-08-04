@@ -13,18 +13,6 @@
 % For title + abstract page
 \usepackage{titling}
 
-% For table of contents with links
-\usepackage{hyperref}
-\hypersetup
-{
-    colorlinks,
-    citecolor=black,
-    filecolor=black,
-    linkcolor=black,
-    urlcolor=blue
-}
-\usepackage{ulem}
-
 % For images
 \usepackage{graphicx}
 \usepackage{subfig}
@@ -60,6 +48,10 @@
   rulecolor=\color{black}
 }
 
+% For listings numbering
+\usepackage{chngcntr}
+\AtBeginDocument{\counterwithin{lstlisting}{section}}
+
 % Math
 \usepackage{amssymb,amsmath}
 \setlength{\thinmuskip}{3\thinmuskip}
@@ -70,8 +62,20 @@
 \usepackage[english, status=draft]{fixme}
 \fxusetheme{color}
 
-% For bibliography in TOC
-\usepackage[nottoc,numbib]{tocbibind}
+% For appendices
+\usepackage[page]{appendix}
+
+% For links (should be the last included)
+\usepackage{hyperref}
+\hypersetup
+{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=blue
+}
+\usepackage{ulem}
 
 % Document title data
 \title{\Large{TODO\\2015-2016}\\\Huge{TODO}}
@@ -308,7 +312,7 @@ Examples of events that can be observed in an Android application are:
 \subsection{Event Concurrency Errors}
 The concurrency among events inside a single application can lead to unexpected behaviors or crashes.\smallskip \\
 When the Android developer decides to explicitly create a multi-threaded application we may have the classical problems of concurrency like synchronization, deadlocks and starvation, but problems arise even if he/she does not manually create threads, due to the aforementioned concurrency of events.\smallskip \\
-In this context, the most relevant challenge in an Android application is race conditions: two or more events do not happen in the order the programmer intended. A simple example of this issue is when the developer asynchronously starts an AsyncTask (an utility class that allows to perform short operations in the background without blocking the UI thread) to download an image from the network. The AsyncTask, when the download is completed, expects the Activity that started it to be still there to receive the result, but maybe the user already left the application and so we encounter for example a NullPointerException.
+In this context, the most relevant challenge in an Android application is race conditions: two or more events do not happen in the order the programmer intended. As an example, reported in listing~\ref{lst_event_race_first}, a race condition may happen when the developer starts an AsyncTask (an utility class that allows to perform short operations in the background without blocking the UI thread) to asynchronously perform some operation. If the user, for example, rotates the device while the AsyncTask is running the application crashes with an \texttt{IllegalStateException} because the reference to the old view is lost.
 
 
 %..............................................................................%
@@ -706,7 +710,7 @@ The defined tests are:
 		\item Linked Issue: \#3608\footnote{https://github.com/wordpress-mobile/WordPress-Android/issues/3608}
 		\item Fixed In: pull request \#3676\footnote{https://github.com/wordpress-mobile/WordPress-Android/pull/3676} 
 		\item Problem Description: in the profile page, if the user typed a value (e.g. his/her name) and then rotated the device, the inserted data would be lost.
-		\item Test: the lifecycle test, defined in Espresso, exploits the rotation callback by first typing the name value and then, after the transition, asserting the input contents.
+		\item Test: the lifecycle test, defined in Espresso, exploits the rotation callback by first typing the name value and then, after the transition, asserting the input contents. The source code of the test can be found in listing~\ref{lst_lifecycle_wp}.
 	\end{itemize}
 	\item Blank post content
 	\begin{itemize}
@@ -1204,14 +1208,15 @@ ordered(com, e1, e2) \equiv \bigg( \Big( com<0 \Rightarrow before(e1, e2) \Big) 
   	\begin{lstlisting}
 	/* The text in the countdown is updated in the correct (inverse) order */
 	allEventsWhereEach(isTextChangeFrom(countdownView))
-		.areOrdered(new Comparator<Event>()
+		.areOrdered(new Comparator<TextChangeEvent>()
 					{
 						@Override
-						public int compare(Event lhs, Event rhs)
+						public int compare(TextChangeEvent lhs, TextChangeEvent rhs)
 						{
-							String t1 = ((TextChangeEvent) lhs).getText();
-							String t2 = ((TextChangeEvent) rhs).getText();
-							return Integer.compare(Integer.valueOf(t2), Integer.valueOf(t1));
+							String t1 = lhs.getText();
+							String t2 = rhs.getText();
+							return Integer.compare(Integer.valueOf(t2),
+												   Integer.valueOf(t1));
 						}
 					}));
 	\end{lstlisting}
@@ -1861,15 +1866,15 @@ Note that the \texttt{EventMonitor} observes the events on the thread specified 
 The \texttt{EventMonitor} can be used as:
 \begin{itemize}
 	\item Runtime monitor during the manual debugging phase of the application development: just like the standard assertions placed in production code, the developer can use the monitor for example inside an activity to log all events and the results of the checks.
-	\item Testing mechanism: the developer can start the monitor at the beginning of a test and add some specific checks, then execute the actions allowed by the chosen testing framework and finally stop the monitor at the end. The monitor works as a standard assertion mechanism, making the test fail in case a consistency check is not successful. Note that this mechanism, since it's not framework-specific, can be used for any type of test, from unit to UI, and with any library.
+	\item Testing mechanism: the developer can start the monitor at the beginning of a test and add some specific checks, then execute the actions allowed by the chosen testing framework and finally stop the monitor at the end. The monitor works as a standard assertion mechanism, making the test fail in case a consistency check is not successful. Note that this mechanism, since it's not framework-specific, can be used for any type of test, from unit to UI, and with any library. A code example of the EventMonitor used as a testing mechanism can be found in listing \ref{lst_event_test}.
 \end{itemize}
 
 \subsection{Event Generators}
-As introduced, the event generators are implemented as \texttt{Observable} objects provided by RxJava. Each observable added to the \texttt{EventMonitor} builds the event stream: in particular, all the observables are combined using the RxJava operator \texttt{merge()}, which transforms a set of observables into a single one that emits all the events in their respective order.\medskip \\
-The events generated by these observables are subclasses of \texttt{Event}, of which just two have been reported in the diagram since there could be hundreds of them. An \texttt{Event} class may also provide one or more static methods to create matchers.
+As introduced, the event generators are implemented as \texttt{Observable} objects provided by RxJava, an example of which can be found in listing \ref{lst_event_custom_observable}. Each observable added to the \texttt{EventMonitor} builds the event stream: in particular, all the observables are combined using the RxJava operator \texttt{merge()}, which transforms a set of observables into a single one that emits all the events in their respective order.\medskip \\
+The events generated by these observables are subclasses of \texttt{Event}, of which just two have been reported in the diagram since there could be hundreds of them. An \texttt{Event} class may also provide one or more static methods to create matchers, as is shown for example in listing \ref{lst_event_custom_event}.
 
 \subsection{Checks}
-A \texttt{Check} implements is logic using a \texttt{CheckSubscriber}, a subclass of the RxJava \texttt{Subscriber}. This component receives all the events of the stream via \texttt{onNext(Event)} and performs some internal computation, possibly short-circuiting the validation calling \texttt{endCheck()}. The callback \texttt{getFinalResult()} is called to return the unique \texttt{Result} of the check.\medskip \\
+A \texttt{Check} implements is logic using a \texttt{CheckSubscriber}, a subclass of the RxJava \texttt{Subscriber}. This component receives all the events of the stream via \texttt{onNext(Event)} and performs some internal computation, possibly short-circuiting the validation calling \texttt{endCheck()}. The callback \texttt{getFinalResult()} is called to return the unique \texttt{Result} of the check. An example of check implementation can be found in listing \ref{lst_event_check}.\medskip \\
 The \texttt{EventMonitor} applies a check on the event stream by calling the operator \texttt{EnforceCheck} on it, which is in charge of transforming a stream of \texttt{Event} objects into a stream containing a single \texttt{Result}.\medskip \\
 Connectives between checks are implementations of \texttt{CheckConnective}, which is in turn a subclass of \texttt{Check}. Each of them implements a \texttt{ResultsSubscriber} that, analogously to a \texttt{CheckSubscriber}, receives the results of its terms, performs some computation and then produces a single \texttt{Result} as output. \texttt{Not}, \texttt{AllHold} and \texttt{AnyHolds} (implementations of the logic \textit{negation}, \textit{and} and \textit{or} respectively) provide static methods as constructors (e.g. \texttt{allHold(check1, check2, check3)}), while \texttt{IfThen} and \texttt{IfAndOnlyIf} (implementations of \textit{single} and \textit{double implication}) are built starting from the \texttt{ProvidedThat} and \texttt{IsSatisfied} classes respectively (e.g. \texttt{providedThat(check1).then(check2)}), to make the calls more human-readable.
 
@@ -1923,14 +1928,14 @@ It is, however, also an alternative to the standard assertions that can be used 
 Comparing the proposed solution with race detectors like EventRacer and DEvA, it is first important to stress the fact that the approach is different. The mentioned tools try to detect possible race conditions, either dynamically or statically, without requiring the developer to write any test case. In the event-based testing library, instead, the focus is on manually generated test cases that allow to verify conditions on the event stream. For this reason, event-based testing is proposed as a complementary tool, and not as an alternative.\medskip \\
 From the point of view of race conditions, it can be noticed that the two approaches mostly focus on different types races.
 \begin{itemize}
-	\item EventRacer and DEvA focus their attention mainly on data races, i.e. they detect when two or more callbacks that use the same variable may be in conflict. If we consider the example of a button click callback where a Service is invoked and a connection callback where the Service is initialized, a race might be detected by the tools. In this example, it does not necessarily mean that the click callback cannot happen before the connection one, but just that the developer should handle that situation, e.g. by checking if the Service variable is null in the click callback before using it and, if so, just show a message to the user.
-	\item The event-based testing approach, instead, focuses on races between events that cannot be verified in any possible execution, i.e. specifying that a given event can happen only after/before/between other given events. An example of this can be the situation where the application logic imposes that text change events can only happen after the user clicks on a given button.
+	\item EventRacer and DEvA focus their attention mainly on data races, i.e. they detect when two or more callbacks that use the same variable may be in conflict. If we consider the example (reported in listing~\ref{lst_event_race_detectors}) of a button click callback where a Service is invoked and a connection callback where the Service is initialized, a race might be detected by the tools. In this example, it does not necessarily mean that the click callback cannot happen before the connection one, but just that the developer should handle that situation, e.g. by checking if the Service variable is null in the click callback before using it and, if so, just show a message to the user.
+	\item The event-based testing approach, instead, focuses on races between events that cannot be verified in any possible execution, i.e. specifying that a given event can happen only after/before/between other given events. An example (reported in listing~\ref{lst_event_race_eventbased}) of this can be the situation where the application logic imposes that text change events of an email contents can happen only before the user clicks on the "Send" button.
 \end{itemize}
 Given this distinction, we can have races that:
 \begin{itemize}
 	\item Can only be recognized by race detection tools: the example of the click-connection race cannot be expressed with temporal assertions since the two callbacks may happen in any order.
-	\item Can only be tested by the event-based approach: the example of the text changes after the click cannot be recognized by the race detectors since there is no variable in common between the click and the text change callbacks.
-	\item Can be both recognized by race detectors and tested with the event-based approach: an example of this is the event of placing a marker on a map when this has not been initialized yet. These two events generated by the application without user interaction must never be in the wrong order, otherwise the application might crash or result in the marker not being placed on the map. This condition can be expressed with a temporal assertion and, since we have a common variable (the map object), it may be recognized by race detectors.
+	\item Can only be tested by the event-based approach: the example of the text changes before the click cannot be recognized by the race detectors since there is no variable in common between the click and the text change callbacks.
+	\item Can be both recognized by race detectors and tested with the event-based approach: an example (reported in listing~\ref{lst_event_race_both}) of this is the event of placing a marker on a map when this has not been initialized yet. These two events generated by the application without user interaction must never be in the wrong order, otherwise the application might crash or result in the marker not being placed on the map. This condition can be expressed with a temporal assertion and, since we have a common variable (the map object), it may be recognized by race detectors.
 \end{itemize}\medskip
 Moreover, with the proposed library the developer is able to focus on events in general, and not only on race conditions like the aforementioned tools. This means that there is the possibility of looking at the event stream generated by an execution from a broader perspective, being also able to express conditions on existence, ordering and quantification of events.
 
@@ -1938,7 +1943,10 @@ Moreover, with the proposed library the developer is able to focus on events in 
 As a real-world example of event-based testing application, the same app employed in the dynamic lifecycle tests evaluation was chosen, WordPress for Android. In this case, the idea is to define some temporal assertions on the latest version at the time of writing~\cite{WordPress2016-07-15}, to discuss the expressiveness of the language, the generation effort and the types of events that can be observed.\medskip \\
 In particular, this evaluation focuses on the \texttt{EditPostActivity}, which allows the users to write and publish a post on their blog. The Activity contains instances of \texttt{EditorFragment}, which manage the fields for writing the post content, and uses the \texttt{PostUploadService} to publish the post and the \texttt{MediaUploadService} to add an image or video to the content.
 
+TODO add link to " in listing~\ref{lst_event_test}", " in listing~\ref{lst_event_custom_event}", " in listing~\ref{lst_event_custom_observable}", " in listing~\ref{lst_event_check}"
+
 \subsubsection{Structure}
+- make complete code example and reference lines in each of these sections
 - test, environment, when monitor starts, etc.
 
 \subsubsection{Events}
@@ -1998,11 +2006,50 @@ Possible future extensions on the proposed work include:
 
 
 %..............................................................................%
+%................................. APPENDICES .................................%
+%..............................................................................%
+
+\newpage
+\begin{appendices}
+\addcontentsline{toc}{part}{Appendices}
+
+\fxnote*{New}{\section{Code Listings}}
+%\setcounter{lstlisting}{0}
+\lstset{
+  numbers=left,
+  frame=single
+}
+
+\lstinputlisting[label={lst_lifecycle_wp},caption={Example of lifecycle test. In particular, it is the test case defined for the \texttt{MyProfileActivity} in the WordPress app that checks if, after a rotation, the inserted name is kept.}]{Listings/LifecycleDynamic/ExampleWP.java}
+
+\lstinputlisting[label={lst_event_race_first},caption={Example of race condition: if the user rotates the device while the AsyncTask is running, the application crashes with an \texttt{IllegalStateException}.}]{Listings/Event/RaceExampleFirst.java}
+
+\lstinputlisting[label={lst_event_test},caption={TODO}]{Listings/Event/CompleteTestImplementation.java}
+
+\lstinputlisting[label={lst_event_custom_event},caption={An example of custom event implementation for event-based testing: the HTML toggle event in the WordPress app. It can have any parameter (in this case just a boolean), provide several static methods to build Hamcrest matchers and define the \texttt{toString} method, whose output is used by the EventMonitor.}]{Listings/Event/EventImplementation.java}
+
+\lstinputlisting[label={lst_event_custom_observable},caption={An example of custom observable for event-based testing: generates the media-related events in the WordPress application. \texttt{EventBusObservable} just provides a static method to easily get the observable, \texttt{EventBusSubsriber} is an abstract class created for reuse and \texttt{MediaUploadOnSubscribe} is the actual implementation of the Rx Observable that fires the events.}]{Listings/Event/ObservableImplementation.java}
+
+\lstinputlisting[label={lst_event_check},caption={An example of check implementation for event-based testing: the "can happen only between" of \texttt{AnEventThat}. The subscriber is implemented as a finite state machine that handles the events in order, changing state and/or short-circuiting the check if we have a match.}]{Listings/Event/CheckImplementation.java}
+
+\lstinputlisting[label={lst_event_race_detectors},caption={Race condition that can be recognized by detectors like EventRacer or DEvA but cannot be expressed with a temporal assertion.}]{Listings/Event/RaceExampleDetectorsOnly.java}
+
+\lstinputlisting[label={lst_event_race_eventbased},caption={Race condition that can be expressed with a temporal assertion but cannot be recognized by detectors like EventRacer or DEvA.}]{Listings/Event/RaceExampleEventBasedOnly.java}
+
+\lstinputlisting[label={lst_event_race_both},caption={Race condition that can be both recognized by detectors like EventRacer or DEvA and expressed with a temporal assertion.}]{Listings/Event/RaceExampleBoth.java}
+
+TODO add code for espresso/eventbased comparison?
+
+\end{appendices}
+
+%..............................................................................%
 %.................................. REFERENCES ................................%
 %..............................................................................%
 
+\newpage
 \bibliographystyle{unsrt}
 \bibliography{Bib/DEvA,Bib/CAFA,Bib/EventRacer,Bib/JUnit,Bib/Lint,Bib/Mockito,Bib/Oracles,Bib/ReactiveLocation,Bib/ReactiveNetwork,Bib/ReactiveSensors,Bib/Retrofit,Bib/Robolectric,Bib/RxAndroid,Bib/RxBinding,Bib/RxBroadcast,Bib/RxFileObserver,Bib/RxGoogleMaps,Bib/RxJava,Bib/RxLifecycle,Bib/RxPermissions,Bib/RxPreferences,Bib/RxWear,Bib/StorIO,Bib/THOR,Bib/CountingLogic,Bib/Hamcrest,Bib/Stats,Bib/InTheClear,Bib/TrackBuddy,Bib/WordPressApp,Bib/WordPressCMS,Bib/WordPress2015-12-06,Bib/WordPress2016-07-15,Bib/ERVA,Bib/SoftwareTestingAndAnalysis,Bib/Espresso,Bib/UIAutomator,Bib/monkeyrunner,Bib/UIExerciserMonkey,Bib/ProGuard} 
+\addcontentsline{toc}{part}{References}
 
 \end{document}
 
