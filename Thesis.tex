@@ -132,7 +132,7 @@ This thesis focuses on two particular challenges of mobile development:
 
 \section{Objectives}
 Given the critical aspects of event concurrency and lifecycle handling, the aim of this thesis is to describe an event-based testing approach for Android applications. The Android operating system was chosen because of its widespread and openness, but the main concepts are valid also for other mobile environments.\bigskip \\
-The focus of the first part of the thesis is on lifeycle changes events. In particular, the problem of lifecycle handling is addressed first with a static code analysis approach to recognize possible misuses of components, and then with a dynamic approach that allows the developer to drive the application lifecycle to test its robustness.\bigskip \\
+The focus of the first part of the thesis is on lifecycle changes events. In particular, the problem of lifecycle handling is addressed first with a static code analysis approach to recognize possible misuses of components, and then with a dynamic approach that allows the developer to drive the application lifecycle to test its robustness.\bigskip \\
 The second part of the thesis focuses instead on generic events, providing to the developer a tool to test their behavior in dynamic conditions. More in detail, a temporal logic language is defined to specify consistency checks on the stream of events, implemented in Android exploiting the ReactiveX library, an innovative system of industrial interest.
 
 \section{Achieved Results}
@@ -164,11 +164,12 @@ The thesis is organized as follows:
 \part{Background}\label{part_background}
 
 \section{Introduction}
-This part introduces more in detail the main concepts that are used during the thesis. In particular, it starts with a short description of testing in general, with some terminology that is employed throughout the thesis. It then provides some information on Android and its development concepts, with particular attention to component lifecycle, which is the focus of the first half of the thesis. Finally, it describes general event-driven systems, introducing some of the issues that are later addressed by the second half of the thesis.
+This part introduces more in detail the main concepts that are used during the thesis. In particular, it starts with a short description of testing in general, with some terminology that is employed throughout the thesis. It then provides some information on Android and its development concepts, with particular attention to component lifecycle, which is the focus of the first half of the thesis. Finally, it describes general event-driven systems, introducing some of the issues that are addressed by the second half of the thesis.
 
 \section{Testing}
-Testing is the process used in software development to assess the validity of functional and non-functional requirements of an application. Although this verification is able to guarantee the correctness of the tested components within the specific conditions described by the test cases, testing cannot assess the validity of the whole application in every situation, because this would require an unfeasible amount of detail. For this reason, testing is mainly used to discover software bugs in particular situations and to reach an acceptable confidence that the program works as expected under the most common conditions. The topic of assessing the quality of a product, as well as issues like when to start or end the evaluation process, has been widely analyzed by research papers and books, like Software Testing and Analysis~\cite{Young:2005:STA:1076948}.\bigskip \\
-Test cases require a mechanism to determine the test outcome, i.e. to tell if the application behaves as expected during the validation process. This mechanism, called oracle, should ideally be complete but avoiding over-specification, while also being efficiently checkable~\cite{Baresi:Oracles}. Oracles can assume many forms, for example the behavior of the application is compared with the technical specifications (e.g. documentation), it is automatically checked by the system thanks to some constructs that allow the developer to specify the test conditions or it can even be manually evaluated by a human being.\bigskip \\
+Testing is the process used in software development to assess the validity of functional and non-functional requirements of an application. Although this verification is able to guarantee the correctness of the tested components within the specific conditions described by the test cases, testing cannot assess the validity of the whole application in every situation, because this would require an unfeasible amount of detail. For this reason, testing is mainly used to discover software bugs in particular situations and to reach an acceptable confidence that the program works as expected under the most common conditions. The topic of assessing the quality of a product, as well as issues like when to start or end the evaluation process, has been widely analyzed by research papers and books, such as Software Testing and Analysis~\cite{Young:2005:STA:1076948}.\bigskip \\
+Test cases require a mechanism to determine the test outcome, i.e. to tell if the application behaves as expected during the validation process. This mechanism, called oracle, should ideally be complete but avoiding over-specification, while also being efficiently checkable~\cite{Baresi:Oracles}. Oracles can assume many forms, for example the behavior of the application is compared with the technical specifications (e.g. documentation), it is automatically checked by the system thanks to some constructs that allow the developer to specify the test conditions or it can even be manually evaluated by a human being.\medskip \\
+This thesis mostly focuses on assertions as testing oracles. An assertion is a statement placed either at a specific point in a program or inside a test case that enables to check a condition. It is expected to be verified, but if a bug is present the assertion fails and the system throws an error. Assertions are test oracles that specify what the application does rather than how.\bigskip \\
 Test cases can be designed from different points of view. In particular, we can have:
 \begin{itemize}
 	\item White-box testing: the focus is on the internal structure of the application, i.e. tests are defined at the source code level (\textit{how} the software behaves).
@@ -193,17 +194,17 @@ Android applications are developed in a Java language environment. The Android S
 \subsection{Application Components}
 Android applications are built by five main components, each with its specific purpose:
 \begin{itemize}
-	\item Activity: an activity represents a single "action" that the user can take and, since almost all activities interact with the user, they provide a screen with a user interface. Each activity in the application is independent from the others, but it is of course possible to start an activity (for example when the user clicks on a button) from another to build the application flow.
+	\item Activity: an Activity represents a single "action" that the user can take and, since almost all Activities interact with the user, they provide a screen with a user interface. Each Activity in the application is independent from the others, but it is of course possible to start an Activity (for example when the user clicks on a button) from another to build the application flow.
 	\item Fragment: this component was introduced in Android 3.0 (API level 11) to support dynamic and flexible UI on large screens, for example on tablets. A Fragment  represents a "portion" of an Activity, with its own state and UI. Each Activity can contain multiple Fragments at a time, Fragments can be added/removed at runtime and each Fragment can be reused in more than one Activity. A Fragment can only be instantiated inside an Activity.
 	\item Service: a Service is a component that is executed in background and, as such, it provides no user interface. It is used to perform complex computations or to interact with an external API (e.g. via the network). The advantage of this approach is that another component (e.g. an Activity) can start and interact with a Service in order to avoid blocking its UI with computationally intensive operations.
-	\item Content Provider: a content provider allows to store and retrieve data in some persistent storage location, for example a local SQL database or a remote repository. The provided data can be shared among different applications or private to a specific one.
-	\item Broadcast Receiver: a Broadcast Receiver responds to global messages, i.e. messages received by all applications on the device. These events may be fired by the system (e.g. the device has just rebooted) or by a single application (e.g. some data is available), and then intercepted by the applications interested to them.
+	\item Content Provider: a content provider allows to store and retrieve data from a persistent storage location, for example a local SQL database or a remote repository. The provided data can be shared among different applications or private to a specific one.
+	\item Broadcast Receiver: a Broadcast Receiver responds to global events, i.e. messages received by all applications on the device. These events may be fired by the system (e.g. the device has just rebooted) or by a single application (e.g. some data is available), and then intercepted by the applications interested to them.
 \end{itemize} 
 Activities, Services and Broadcast Receivers are started asynchronously by messages called Intents. This allows not only an application to start its own components, but also to call on other applications. For example, a game may start its internal GameService to manage the game loop, but also send an Intent to a social network application to share the game progress.
 
 \subsection{Component Lifecycle}
 App components in Android such as Activities, Fragments and Services are characterized by their lifecycle, i.e. the current runtime state. In general each component is started and then destroyed, but some can also be paused and resumed, and go through several other states.\medskip \\
-When a lifecycle state transition happens, the Android system allows the developers to implement several callbacks in the component implementation to manage their behavior in those particular situations. In particular, the Java classes that define a component (such as \texttt{Activity}), which are sub-classed by the developer, allow to override one or more methods to handle the callbacks (such as \texttt{onCreate()} or \texttt{onPause()}).
+When a lifecycle state transition happens, the Android system allows the developers to implement several callbacks in the component implementation to manage their behavior in those situations. In particular, the Java classes that define a component (such as \texttt{Activity}), which are sub-classed by the developer, allow to override one or more methods to handle the callbacks (such as \texttt{onCreate()} or \texttt{onPause()}).
 
 \subsubsection{Activity Lifecycle}
 An Activity can be in three static states:
@@ -218,20 +219,30 @@ An Activity can also be in two transient states:
 	\item Started: the Activity has been initialized and will soon become Resumed.
 \end{itemize}\medskip
 Finally, an Activity can be Destroyed. In this "state" the Activity instance is dead. An Activity can for example be destroyed when the user presses the back button or by the OS when it is stopped and the device needs to free resources. In the latter case, if the application is then reopened by the user, the operating system provides a way to restore the lost information: in particular, the developer can override the callbacks \texttt{onSaveInstanceState()} and \texttt{onCreate()} to pass data between the old and the new instance.\bigskip \\
-The following image\footnote{https://developer.android.com/training/basics/activity-lifecycle/starting.html\#lifecycle-states} shows a simplified scheme of the Activity lifecycle transitions with the corresponding Java callbacks.
-\includegraphics[width=\textwidth]{Images/Android/basic-lifecycle.png}
+Figure \ref{fig:act_lifec} shows a simplified scheme, with the corresponding Java callbacks.
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{Images/Android/basic-lifecycle.png}
+  \caption[Activity lifecycle]{Simplified scheme of the Activity lifecycle. Source: https://developer.android.com/training/basics/activity-lifecycle/starting.html\#lifecycle-states}
+  \label{fig:act_lifec}
+\end{figure}
 
 \subsubsection{Fragment Lifecycle}
-The lifecycle of a Fragment is closely related to the lifecycle of the Activity that contains it: for example, when an Activity is paused, all the contained Fragments are paused too. In addition to this, however, Fragments can go through lifecycle changes independently of their host Activity: in particular, since fragments can be dynamically added and removed at runtime, they can be created and destroyed while the Activity is running. Moreover, the developer also has the option to store removed fragments in the so-called backstack and be able to restore them later for example when the user presses the "back" button.\medskip \\
+The lifecycle of a Fragment is closely related to the lifecycle of the Activity that contains it: for example, when an Activity is paused, all the contained Fragments are paused too. In addition to this, however, Fragments can go through lifecycle changes independently of their host Activity: in particular, since Fragments can be dynamically added and removed at runtime, they can be created and destroyed while the Activity is running. Moreover, the developer also has the option to store removed fragments in the so-called backstack and be able to restore them later for example when the user presses the "back" button.\medskip \\
 Like Activities, Fragments are characterized by three static states:
 \begin{itemize}
 	\item Resumed: the Fragment is visible and can receive user input.
 	\item Paused: the Activity that contains this Fragment is \textit{partially} hidden by another visual component and has lost the focus.
 	\item Stopped: the Fragment is completely hidden to the user. This can happen if the host Activity is also not visible (i.e. in background) or if the Fragment has been stored in the backstack. Like Activities, stopped Fragments are still "alive" and their state is retained.
 \end{itemize}
-Lifecycle management for Fragments is very similar to the one for Activities, since all callbacks are the same. Fragments provide however some additional methods to manage the interaction with the host Activity: for example \texttt{onAttach()} is called when the Fragment is linked to an Activity, \texttt{onCreateView()} when the Fragment is ready to build its UI, etc.\bigskip \\
-The following image\footnote{https://developer.android.com/guide/components/fragments.html\#Creating} shows the main Fragment callbacks:
-\includegraphics[width=180px]{Images/Android/fragment_lifecycle.png}
+Lifecycle management for Fragments is very similar to the one for Activities, since all callbacks are the same. Fragments provide, however, additional methods to manage the interaction with the host Activity: for example \texttt{onAttach()} is called when the Fragment is linked to an Activity, \texttt{onCreateView()} when the Fragment is ready to build its UI, etc. Figure \ref{fig:fra_lifec} shows the main Fragment callbacks.\bigskip \\
+Another characteristic of Fragments is that their instance can be retained, if the developer chooses to do so. This means that the Fragment instance is kept even if the Activity is recreated (e.g. the device screen is rotated), allowing to skip time-consuming initializations.
+\begin{figure}
+  \centering
+  \includegraphics[width=180px]{Images/Android/fragment_lifecycle.png}
+  \caption[Fragment lifecycle]{Main fragment lifecycle callbacks. Source: https://developer.android.com/guide/components/fragments.html\#Creating}
+  \label{fig:fra_lifec}
+\end{figure}
 
 \subsubsection{Managing the Lifecycle}\label{managing_lifecycle}
 Handling the components lifecycle is a critical aspect in developing an Android application and it is often source of bugs or unexpected behaviors. For example, properly implementing Activity/Fragment lifecycle methods ensures that the app:
@@ -239,7 +250,7 @@ Handling the components lifecycle is a critical aspect in developing an Android 
 	\item Does not waste system resources (e.g. device sensors) while the user is not interacting with it.
 	\item Stops its execution when the user leaves the application (for example a game should pause if the user receives a phone call).
 	\item Retains its state if the user leaves and then returns to the application (e.g. a messaging app must keep a partially written message even if the user puts the app in background for a moment).
-	\item Does not crash or loses user progress when lifecycle changes occur (e.g. an app that does not correctly manage lifecycle may crash with a NullPointerException if some internal component was destroyed during \texttt{onStop()} but not restored during \texttt{onStart()}).
+	\item Does not crash or loses user progress when lifecycle changes occur (e.g. an app that does not correctly manage lifecycle may crash with a NullPointerException if an internal component was destroyed during \texttt{onStop()} but not restored during \texttt{onStart()}).
 	\item Adapts to configuration changes (like a device rotation between landscape and portrait modes) without losing data or crashing.
 \end{itemize}\medskip
 In general, for Activities and Fragments the developer should make sure to:
@@ -291,28 +302,33 @@ In general, for Activities and Fragments the developer should make sure to:
 \section{Event-based Systems}
 
 \subsection{Event-Driven Architecture}
-Event-Driven Architecture is a software pattern where the focus is on generation and reaction to events. An event can be defined as a message generated by a producer that represents a change of state or a relevant action performed by some component/actor (e.g. the user). Once generated, events are sent via event channels to all the consumers that are interested to them. Event-Driven Architectures are:
+Event-Driven Architecture is a software pattern where the focus is on generation and reaction to events. An event can be defined as a message generated by a producer that represents a change of state or a relevant action performed by a component/actor (e.g. the user). Once generated, events are sent via event channels to all the consumers that are interested to them. Event-Driven Architectures are:
 \begin{itemize}
 	\item Extremely loosely coupled: the producer does not know about the consequences of its events. It just generates them and then it's up to the consumers to manage everything else.
 	\item Well distributed: an event can be anything and exist almost anywhere.
 \end{itemize}
 
 \subsection{Android as an Event-Driven Architecture}
-Android is implemented as an event-based system. This is because a mobile device must manage several events, like clicks on the touchscreen, sensor data, network requests/responses, etc.\smallskip \\
-From an application point of view, events can be generated internally (e.g. from a service/thread created by the application itself) or externally (e.g. sensor data). Each application is composed of several threads, a subset of which, called Looper threads, are in charge of processing events by invoking an appropriate event Handler for each of them.\smallskip \\
-Events from a single thread are atomic, i.e. they are placed on a FIFO event queue and processes one by one. However, events produced by several threads are processed concurrently and not guaranteed to be ordered or atomic. For example the user may click on a button while the application receives a network response and the device broadcasts some sensor data.\medskip \\
+Android is implemented as an event-based system. This is because a mobile device must manage several events, like clicks on the touchscreen, sensor data, network requests/responses, etc.\bigskip \\
+From an application point of view, events can be generated internally (e.g. from a service/thread created by the application itself) or externally (e.g. sensor data). Each application is composed of several threads, a subset of which, called Looper threads, are in charge of processing events by invoking an appropriate event Handler for each of them.\medskip \\
+Events from a single thread are atomic, i.e. they are placed in a FIFO event queue and processes one by one. However, events produced by several threads are processed concurrently and not guaranteed to be ordered or atomic. For example the user may click on a button while the application receives a network response and the device broadcasts some sensor data.\medskip \\
+\begin{figure}
+  \centering
+  \includegraphics[width=300px]{Images/Android/event-driven.png}
+  \caption[Android event handling]{Simplified scheme of Android event handling. Source: https://guides.codepath.com/android/Repeating-Periodic-Tasks}
+\end{figure}\\
 Examples of events that can be observed in an Android application are:
 \begin{itemize}
 	\item User input events can be observed attaching listeners to View components. An event listener is a Java interface whose methods are called by the Android framework when the View is triggered by user interaction, for example the \texttt{onClick()} callback of a listener attached to a Button will be called when the user clicks on that button. The developer can then implement the callback to perform any action in response to the input event generation, e.g. starting another activity.
 	\item Lifecycle events are triggered when there is a state transition of some component, like an Activity. For example the \texttt{onPause()} callback is invoked when an Activity is paused.
-	\item Broadcast events like system messages (e.g. device boot completed, alarm goes off, etc.) or application-specific messages are received by BroadcastReceivers in the \texttt{onReceive()} callback.
+	\item Broadcast events like system messages (e.g. device boot completed, alarm goes off, etc.) or application-specific messages are received by Broadcast Receivers in the \texttt{onReceive()} callback.
 	\item Asynchronous messages from services external to the application (e.g. sensor data, network requests, etc.) also have their specific callbacks.
 \end{itemize}
 
 \subsection{Event Concurrency Errors}
-The concurrency among events inside a single application can lead to unexpected behaviors or crashes.\smallskip \\
-When the Android developer decides to explicitly create a multi-threaded application we may have the classical problems of concurrency like synchronization, deadlocks and starvation, but problems arise even if he/she does not manually create threads, due to the aforementioned concurrency of events.\smallskip \\
-In this context, the most relevant challenge in an Android application is race conditions: two or more events do not happen in the order the programmer intended. As an example, reported in listing~\ref{lst_event_race_first}, a race condition may happen when the developer starts an AsyncTask (an utility class that allows to perform short operations in the background without blocking the UI thread) to asynchronously perform some operation. If the user, for example, rotates the device while the AsyncTask is running the application crashes with an \texttt{IllegalStateException} because the reference to the old view is lost.
+The concurrency among events inside a single application can lead to unexpected behaviors or crashes.\medskip \\
+When the Android developer decides to explicitly create a multi-threaded application we may have the classical problems of concurrency like synchronization, deadlocks and starvation, but problems arise even if he/she does not manually create threads, due to the aforementioned concurrency of events.\medskip \\
+In this context, the most relevant challenge in an Android application is race conditions: two or more events do not happen in the order the programmer intended. As an example, reported in listing~\ref{lst_event_race_first}, a race condition may happen when the developer starts an AsyncTask (an utility class that allows to perform short operations in the background without blocking the UI thread) to asynchronously perform some operation. If the user, for example, rotates the device while the AsyncTask is running, the application crashes with an \texttt{IllegalStateException} because the reference to the old view is lost.
 
 
 %..............................................................................%
@@ -2041,6 +2057,10 @@ Possible future extensions on the proposed work include:
 TODO add code for espresso/eventbased comparison?
 
 \end{appendices}
+
+\newpage
+\listoffigures
+\addcontentsline{toc}{part}{List of Figures}
 
 %..............................................................................%
 %.................................. REFERENCES ................................%
