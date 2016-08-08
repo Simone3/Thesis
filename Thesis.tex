@@ -614,13 +614,13 @@ Since the lifecycle static checks are effective mostly in the early stages of de
 
 \subsection{Lifecycle Test Cases}
 In this section a dynamic approach to lifecycle testing is presented, as opposed to the static technique described in the previous section.\medskip \\
-The idea is to provide to the developer pre-generated test cases that allow to explore the most common lifecycle changes, to overcome the limitation the the built-in testing frameworks that only provide low-level methods that need to be carefully chained each time. With the proposed approach, the complexity of managing the lifecycle transitions is completely hidden to the developer, which can only focus on expressing actions to be performed and conditions to be checked during the test execution.
+The idea is to provide to the developer pre-generated test cases that allow to explore the most common lifecycle changes, to overcome the limitation of the built-in testing frameworks that only provide low-level methods that need to be carefully chained each time. With the proposed approach, the complexity of managing the lifecycle transitions is completely hidden to the developer, which can only focus on expressing actions to be performed and conditions to be checked during the test execution.
 
 \subsection{Design}
 To allow custom actions and checks during the pre-defined lifecycle tests the system uses several callbacks, for example the \textit{PauseCallback} allows the developer to specify some actions and checks before the component is paused, some checks while it is paused and some other actions and checks when the component is resumed again. These callbacks are defined by the developer inside a test case and then used by the system during the actual lifecycle tests in the appropriate moments.\medskip \\
 The pre-generated lifecycle tests are defined for two frameworks:
 \begin{itemize}
-	\item ActivityTestRule tests: the \texttt{ActivityTestRule} objects allow the developer to specify which Activity to consider during a test. It is used for:
+	\item Activity Test Rule tests: the \texttt{ActivityTestRule} objects allow the developer to specify which Activity to consider during a test. It is used for:
 	\begin{itemize}
 		\item Instrumented unit testing
 		\item Espresso UI testing
@@ -681,7 +681,7 @@ The defined tests are:
      	\item \textit{Actions and assertions after the recreation}
 	\end{itemize}
 	The test case also provides a way to check the actual contents of the saved instance state \texttt{Bundle} to see if it contains the correct data passed from the old to the new instance of the component.
-	\item Rotation: simulates the device being rotated, from portrait to landscape modes or vice-versa. By default, from the lifecycle point of view this has the same effect of a recreation, but the developer can specify a different behavior changing the \texttt{configChanges} attribute in the application manifest. This test case can be useful to see if the component dynamically adapts to the new rotation, e.g. providing a different UI layout.
+	\item Rotation: simulates the device being rotated, from portrait to landscape modes or vice versa. By default, from the lifecycle point of view this has the same effect of a recreation, but the developer can specify a different behavior changing the \texttt{configChanges} attribute in the application manifest. This test case can be useful to see if the component dynamically adapts to the new rotation, e.g. providing a different UI layout.
 	\begin{itemize}
 		\item \texttt{onCreate()}
 		\item \texttt{onStart()}
@@ -691,25 +691,31 @@ The defined tests are:
 		\item \textit{Actions and assertions after the rotation}
 	\end{itemize}
 \end{itemize}
+The developer can also chain several of the listed tests together to build a complex execution flow, for example first pausing and resuming an Activity, and then destroying it.
 
 \subsection{Implementation}
-TODO UML DIAGRAM HERE \medskip \\
-The system is split in three modules. The reason for this is the Android system of including test libraries: using Gradle, the developer can \textit{testCompile} the libraries used for local tests (i.e. that run on the development computer) and \textit{androidTestCompile} the libraries used for instrumented tests (i.e. that run on real mobile devices or emulators). Since Robolectric is local and ActivityTestRule is instrumented, two distinct modules \texttt{RobolectricLifecycleTesting} and \texttt{ActivityTestRuleLifecycleTesting} allow the developer to correctly include them without creating useless dependencies. The module \texttt{LifecycleTesting} includes the common parts of the other two.\medskip \\
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{Images/LifecycleDyn/UML/Implementation.jpg}
+  \caption[Lifecycle Tests Implementation UML]{UML Diagram for the Lifecycle Dynamic Tests Implementation}
+\end{figure}
+The system is split in three modules. The reason for this is the Android system of including test libraries: using Gradle, the developer can \textit{testCompile} the libraries used for local tests (i.e. that run on the development computer) and \textit{androidTestCompile} the libraries used for instrumented tests (i.e. that run on real mobile devices or emulators). Since Robolectric is local and Activity Test Rule is instrumented, two distinct modules \texttt{RobolectricLifecycleTesting} and \texttt{ActivityTestRuleLifecycleTesting} allow the developer to correctly include them without creating useless dependencies. The module \texttt{LifecycleTesting} includes the common parts of the other two.\medskip \\
 The \texttt{LifecycleTest} class inside the \texttt{LifecycleTesting} module is the main class of the system. It defines:
 \begin{itemize}
 	\item Abstract methods implemented by the sub-modules that allow to specify the means to control the component lifecycle, according to their structure.
 	\item Abstract methods implemented by the end-developer that allow to pass the callbacks for each lifecycle test.
-	\item The actual tests that use the previous two sets of methods to drive the lifecycle and to perform actions and checks in between.
+	\item Helper methods that define the correct sequence of lifecycle callbacks for each of the tests, which can also be used by the end-developer to chain several test cases together.
+	\item The actual tests that use the previous three sets of methods to drive the lifecycle and to perform actions and checks in between.
 \end{itemize}
 Inside the module, several interfaces for the callbacks are also defined. \bigskip \\
-The \texttt{RobolectricLifecycleTest} class inside the  \texttt{RobolectricLifecycleTesting} module is the implementation of the lifecycle tests for the Robolectric framework. Besides implementing the methods to drive the component lifecycle using the Robolectric \texttt{ActivityController} class, it also provides the abstract method \texttt{getActivityClass()} to allow the developer to define the activity under test and the utility \texttt{getActivity()} that allows the developer to retrieve the activity during a callback.\bigskip \\
-ActivityTestRule tests are covered by the \texttt{ActivityRuleLifecycleTest} class inside the \texttt{ActivityTestRuleLifecycleTesting} module. It implements the lifecycle methods using the Android \texttt{Instrumentation} class and provides the abstract method \texttt{getActivityTestRule()} to allow the developer to define the ActivityTestRule under test.
+The \texttt{RobolectricLifecycleTest} class inside the  \texttt{RobolectricLifecycleTesting} module is the implementation of the lifecycle tests for the Robolectric framework. Besides implementing the methods to drive the component lifecycle using the Robolectric \texttt{ActivityController} class, it also provides the abstract method \texttt{getActivityClass()} to allow the developer to define the activity under test and the utility \texttt{getActivity()} that allows to retrieve the activity during a callback.\bigskip \\
+Activity Test Rule tests are covered by the \texttt{ActivityRuleLifecycleTest} class inside the \texttt{ActivityTestRuleLifecycleTesting} module. It implements the lifecycle methods using the Android \texttt{Instrumentation} class and provides the abstract method \texttt{initializeActivityTestRule()} to allow the developer to define the Activity Test Rule under test.
 
-\subsection{Evaluation}
-\fxnote*{New}{
+\fxnote*{New}{\subsection{Evaluation}}
+
 \subsubsection{General Properties}
 \begin{itemize}
-	\item Applicability: lifecycle tests have a wide applicability range, since the behavior of almost every Activity of an application is directly affected by its lifecycle. Moreover, the tests are available for ActivityTestRule unit/integration testing, Espresso UI testing and Robolectric unit testing, and so they can be applied in most of the testing environments employed in Android development.
+	\item Applicability: lifecycle tests have a wide applicability range, since the behavior of almost every Activity of an application is directly affected by its lifecycle. Moreover, the tests are available for Activity Test Rule unit/integration testing, Espresso UI testing and Robolectric unit testing, and so they can be applied in most of the testing environments employed in Android development.
 	\item Effectiveness: the tests correctly simulate the real behaviors of lifecycle transitions, allowing the developer to setup test cases that can effectively reveal criticalities.
 	\item Usability: to define the lifecycle test cases the developer only needs to inherit from the classes provided by the library and implement the abstract methods. In each of them, the complexity of handling the lifecycle transitions is completely hidden to the developer thanks to the callback mechanism, allowing to focus only on the actions and assertions to be performed during the test.
 	\item Performance: the overhead introduced by the lifecycle transitions handling is negligible, and so the time complexity of each test depends only on the actions and assertions defined by the developer.
@@ -717,8 +723,7 @@ ActivityTestRule tests are covered by the \texttt{ActivityRuleLifecycleTest} cla
 
 \subsubsection{Real-World Application}
 To prove the lifecycle tests effectiveness, the library has been applied to WordPress~\cite{WordPressApp}, the Android application that allows to manage directly from mobile devices the websites created with the well-known content management system WordPress~\cite{WordPressCMS}.\bigskip \\
-The evaluation has been performed by applying the same lifecycle tests first on an old version of the application (at commit \textit{9f9cb12}\footnote{https://github.com/wordpress-mobile/WordPress-Android/commit/9f9cb12bb1d8a82d60897b5c3ff954c2f88de4f2} on December 6, 2015) and then on the latest version at the time of writing (at commit \textit{bfdf611}\footnote{https://github.com/wordpress-mobile/WordPress-Android/commit/bfdf611c6a37ddd1fad1980f73a00389b2e22677} on July 15, 2016). In the six months elapsed between the two versions several lifecycle issues were discovered and fixed, and so the idea is to show that the defined tests fail in the older version while they succeed in the newer one.\bigskip \\
-The test cases can be found in the repositories \textit{WordPress-Android-2015-12-06}~\cite{WordPress2015-12-06} and \textit{WordPress-Android-2016-07-15}~\cite{WordPress2016-07-15}, forks of the original repository of the application.\bigskip \\
+The evaluation has been performed by applying the same lifecycle tests first on an old version of the application (at commit \textit{9f9cb12}\footnote{https://github.com/wordpress-mobile/WordPress-Android/commit/9f9cb12bb1d8a82d60897b5c3ff954c2f88de4f2} on December 6, 2015)~\cite{WordPress2015-12-06} and then on the latest version at the time of writing (at commit \textit{bfdf611}\footnote{https://github.com/wordpress-mobile/WordPress-Android/commit/bfdf611c6a37ddd1fad1980f73a00389b2e22677} on July 15, 2016)~\cite{WordPress2016-07-15}. In the six months elapsed between the two versions some lifecycle issues were discovered and fixed, and so the idea is to show that the defined tests fail in the older version while they succeed in the newer one.\bigskip \\
 The defined tests are:
 \begin{itemize}
 	\item Loss of data in profile
@@ -726,9 +731,10 @@ The defined tests are:
 		\item Bug Category: usability, correctness
 		\item Lifecycle Transition: rotation
 		\item Linked Issue: \#3608\footnote{https://github.com/wordpress-mobile/WordPress-Android/issues/3608}
-		\item Fixed In: pull request \#3676\footnote{https://github.com/wordpress-mobile/WordPress-Android/pull/3676} 
+		\item Fixed In: pull request \#3912\footnote{https://github.com/wordpress-mobile/WordPress-Android/pull/3912} 
 		\item Problem Description: in the profile page, if the user typed a value (e.g. his/her name) and then rotated the device, the inserted data would be lost.
 		\item Test: the lifecycle test, defined in Espresso, exploits the rotation callback by first typing the name value and then, after the transition, asserting the input contents. The source code of the test can be found in listing~\ref{lst_lifecycle_wp}.
+		\item Causes and Solutions: the bug was caused by not saving the instance of the views at the device rotation. The chosen solution was to employ a \texttt{DialogFragment} component that automatically manages button and dialog, including their lifecycle.
 	\end{itemize}
 	\item Blank post content
 	\begin{itemize}
@@ -738,6 +744,7 @@ The defined tests are:
 		\item Fixed In: pull request \#3577\footnote{https://github.com/wordpress-mobile/WordPress-Android/pull/3577} 
 		\item Problem Description: reading a long blog post, pausing and resuming the application caused most of the content to be invisible to the user.
 		\item Test: the Espresso lifecycle test opens a blog post, scrolls down and, after the pause, checks that all the content is displayed.
+		\item Causes and Solutions: the \texttt{WebView} component used to display the page was paused during \texttt{onPause()} but not resumed during \texttt{onResume()}, and so the simple solution of the bug was to add the latter call.
 	\end{itemize}
 	\item Unexpected page change
 	\begin{itemize}
@@ -747,9 +754,10 @@ The defined tests are:
 		\item Fixed In: pull request \#4127\footnote{https://github.com/wordpress-mobile/WordPress-Android/pull/4127} 
 		\item Problem Description: in the settings page, if the user accessed the notifications-specific area and then rotated the device, he/she was redirected back to the general settings screen. 
 		\item Test: the Espresso lifecycle test first opens the settings page and clicks on the notifications section button, then after the rotation checks if the same page is still displayed.
+		\item Causes and Solutions: the bug was caused by the missing \texttt{NotificationsSettingsActivity} rotation handling. To solve the issue, the developers decided to simply add \texttt{android:configChanges=\char`\"orientation|screenSize\char`\"} in the application manifest, to override the automatic recreation of the Activity after the rotation. This solution was chosen for consistency with the other Activities of the application, but it is not ideal since the Android developers themselves suggest it only as a last resort\footnote{https://developer.android.com/guide/topics/manifest/activity-element.html}.
 	\end{itemize}
 \end{itemize}
-}
+
 
 %..............................................................................%
 %.................................... EVENTS ..................................%
@@ -941,7 +949,7 @@ The first type of checks focuses on single events at a time: for example we may 
   \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
   
   	\begin{lstlisting}
-	/* Can send broadcast only if the the service is working */
+	/* Can send broadcast only if the service is working */
 	anEventThat(isSendBroadcast())
 		.canHappenOnlyBetween(
 			anEventThat(isServiceStart(mainService)),
