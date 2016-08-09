@@ -61,6 +61,8 @@
 % For fix notes
 \usepackage[english, status=draft]{fixme}
 \fxusetheme{color}
+\fxsetup{theme=color, inline, nomargin} 
+\newcommand{\fix}[1]{\fxnote{#1}\xspace}
 
 % For appendices
 \usepackage[page]{appendix}
@@ -78,7 +80,7 @@
 \usepackage{ulem}
 
 % Document title data
-\title{\Large{TODO\\2015-2016}\\\Huge{TODO}}
+\title{\Large{TODO\\2015-2016}\\\Huge{TODO}} 
 \author{836897 Simone Graziussi}
 \date{TODO}
 
@@ -117,14 +119,16 @@
 %................................... INTRO ....................................%
 %..............................................................................%
 
-\part{Introduction}
+\part{Introduction} \fix{Presumably you need \texttt{chapter}s instead of \texttt{part}s. Parts aggregate chapters. While intro is short, so subsections can do.}
+
+\fix{By this time you can propose a title.}
 
 \section{Context}
-Mobile market is continuously expanding, in 2016 2 billion people world-wide own a smarphone and stores like Google Play and Apple's App Store host more than 2 million applications~\cite{stats}.\medskip \\
+Mobile market is continuously expanding, in 2016 2 billion people world-wide own a smartphone and stores like Google Play and Apple's App Store host more than 2 million applications~\cite{stats}.\medskip \\
 Due to this widespread, mobile applications require high quality standards and the only way a developer can obtain confidence of correctness and usability in a set of specific circumstances is testing.\bigskip \\
 Mobile testing, however, presents several challenges. The main problem is fragmentation: there are hundreds of different devices that may run an application, each with different hardware capabilities, screen sizes, available sensors and input methods, operating systems or versions of the same operating system. Other issues are for example network availability, internationalization, scripting (e.g. emulate touchscreen gestures during a test) and usability.
 \bigskip \\
-This thesis focuses on two particular challenges of mobile development:
+This thesis focuses on two particular challenges of mobile development: \fix{challenges that have been largely overlooked to date}
 \begin{itemize}
 	\item Events: mobile applications are characterized by a highly dynamic environment, where hundreds of events may be processed every minute, such as sensor data, connectivity changes, user input, network responses, etc. These events can happen in many different orders and frequencies, and, if the developer does not handle them correctly, this may lead to unexpected behaviors or crashes.
 	\item Lifecycle: application components are characterized by their lifecycle, i.e. by several working states such as running, paused, destroyed, etc. This mechanism needs to be carefully handled by the developer: for example an application should stop requesting sensor data while paused to avoid wasting resources or to commit unsaved data before it is closed.
@@ -139,7 +143,7 @@ The second part of the thesis focuses instead on generic events, providing to th
 The original contributions of this thesis are:
 \begin{itemize}
 	\item A survey of the approaches to test Android applications, with particular regard to lifecycle handling and concurrency of events.
-	\item A collection of examples of best practices in handling components according to the application lifecycle and the implementation of static checks to help the developer recognize possible misuses.
+	\item A collection of examples of best practices in handling components according to the application lifecycle and the implementation of static checks to help the developer recognize possible misuses. \fix{These can be separated as two complementary contributions.}
 	\item Implementation of a testing framework that allows to verify the behavior of an application during common lifecycle changes.
 	\item Definition of a temporal logic language to describe consistency checks among events and its implementation in a testing tool.
 	\item Empirical evaluation of the proposed tools on real-world applications, to discuss their effectiveness.
@@ -436,6 +440,8 @@ A completely different approach for race detection is provided by DEvA~\cite{Saf
 \end{itemize}
 DEvA allows a very fast analysis (usually 1 or 2 minutes) and guarantees complete code coverage, but static analysis may report false positives or be unable to detect some anomalies.
 
+                                                                                                                                 
+\fix{You can conclude the section with a couple of sentences stating that present work addresses the limitations of the state of the art and introduces new X, Y, Z for A, B, C }
 
 %..............................................................................%
 %.................................. LIFECYCLE .................................%
@@ -486,7 +492,7 @@ The selected components for static lifecycle analysis are:
 	\item Google API Client: the \texttt{GoogleApiClient} class allows to connect to the Google Play services for several APIs, like Google+, Google Drive, wearables, etc. The developer can either manage the connection manually or leave it to the system. The following specifications are of course valid for the former case.
 	\begin{itemize}
 		\item Release: the API Client should always be disconnected when the application is done using it. This fact is not clearly stated in the documentation, but, given the best practices described in the next element, it is safe to assume that it is required.
-		\item Best Practices: the official recommendation is to connect during \texttt{onStart()} and to disconnect during \texttt{onStop()}\footnote{https://developers.google.com/android/guides/api-client\#start\_a\_manually\_managed\_connection}.
+		\item Best Practices: the official recommendation is to connect during \texttt{onStart()} and to disconnect during \texttt{onStop()}\footnote{https://developers.google.com/android/guides/api-client\#start\_a\_manually\_managed\_connection}. \fix{use package \texttt{url} and wrap the references in it, should simplify your life}
 		\item Double Instantiation: it is not a problem since the call to \texttt{connect()} returns immediately if the client is already connected or connecting\footnote{https://developers.google.com/android/reference/com/google/android/gms/common/api/GoogleApiClient\#public-methods}.
 	\end{itemize}
 	\item Fused Location Provider API: the \texttt{FusedLocationProviderApi} class allows to query information about the current location. In particular, we are interested in the functionality that allows to receive periodic updates.
@@ -721,8 +727,9 @@ Activity Test Rule tests are covered by the \texttt{ActivityRuleLifecycleTest} c
 	\item Performance: the overhead introduced by the lifecycle transitions handling is negligible, and so the time complexity of each test depends only on the actions and assertions defined by the developer.
 \end{itemize}
 
-\subsubsection{Real-World Application}
-To prove the lifecycle tests effectiveness, the library has been applied to WordPress~\cite{WordPressApp}, the Android application that allows to manage directly from mobile devices the websites created with the well-known content management system WordPress~\cite{WordPressCMS}.\bigskip \\
+\subsubsection{Real-World Application} \fix{Do you provide listings of the generated tests? If not, could you please add short code snippets showing how your tests will look like for the three cases. And mention if developers have added any new test cases.}
+To prove the lifecycle tests effectiveness, the library has been applied to WordPress~\cite{WordPressApp}, the Android application that allows to manage directly from mobile devices the websites created with the well-known content management system WordPress~\cite{WordPressCMS}.\bigskip \\ \fix{to separate paragraphs just an empty line in the latex source should be enough. Without \texttt{bigskip} etc.}
+
 The evaluation has been performed by applying the same lifecycle tests first on an old version of the application (at commit \textit{9f9cb12}\footnote{https://github.com/wordpress-mobile/WordPress-Android/commit/9f9cb12bb1d8a82d60897b5c3ff954c2f88de4f2} on December 6, 2015)~\cite{WordPress2015-12-06} and then on the latest version at the time of writing (at commit \textit{bfdf611}\footnote{https://github.com/wordpress-mobile/WordPress-Android/commit/bfdf611c6a37ddd1fad1980f73a00389b2e22677} on July 15, 2016)~\cite{WordPress2016-07-15}. In the six months elapsed between the two versions some lifecycle issues were discovered and fixed, and so the idea is to show that the defined tests fail in the older version while they succeed in the newer one.\bigskip \\
 The defined tests are:
 \begin{itemize}
@@ -769,7 +776,7 @@ The defined tests are:
 \section{Introduction}
 Moving from the specific type of events related to the lifecycle to a more general concept of event, we can also state that the built-in testing support is lacking from this point of view. In general, the only way to test concurrency of events with the provided testing frameworks is to manually set variables and check several conditions via conditional statements, which hardly helps in complex environments.\medskip \\
 Given this situation, several external approaches were devised, like dynamic analysis with EventRacer and static analysis with DEvA, described in detail in section \ref{section_race_tools}. From different point of views, they all try to detect concurrency problems among events, mainly related to data races.\medskip \\
-The solution proposed in the second part of this thesis aims at being a complementary tool to these approaches. More in detail, the idea is to provide a tool that makes event testing easier. Instead of focusing on automatic detection, which is already covered both dynamically and statically by the aforementioned tools, it provides the means to manually specify conditions during standard unit, integration or UI tests. In particular, the developer is able to specify which events to observe during the execution and then to define consistency checks on their stream, such as happens-before relationship, ordering, etc.\medskip \\
+The solution proposed in the second part of this thesis aims at being a complementary tool to these approaches. \fix{and does not suffer from false positives and false negatives intrinsic to these approaches (as discussed in section ...)} More in detail, the idea is to provide a tool that makes event testing easier. Instead of focusing on automatic detection, which is already covered both dynamically and statically by the aforementioned tools, it provides the means to manually specify conditions during standard unit, integration or UI tests. In particular, the developer is able to specify which events to observe during the execution and then to define consistency checks on their stream, such as happens-before relationship, ordering, etc.\medskip \\ \fix{this section explains very well what is the contribution in comparison to the existing work. One suggestion is to first introduce all the ``new'' capabilities of the tool/language, and then explain how they intersect/complement the race-detection work. Otherwise one gets an impression that this is just a variant of race detection.}
 This approach allows to detect possible race conditions like the other tools, but the scope is not limited to data races: the developer is able to specify any type of condition on any event generated by the application, from user input to sensor data callbacks. Moreover, the tool does not only apply to race conditions but it also allows to focus on ordering among similar events, to quantify the amount of events of a certain type during a particular execution and so on.\medskip \\
 The implementation of this event-based testing approach exploits the ReactiveX library, an innovative system of industrial interest (it is employed for example by Microsoft and Netflix) that allows to observe, transform and listen to events.\medskip \\
 The following sections first present a formalization of the temporal assertions language used to define the consistency checks on the event stream, followed by a detailed explanation of the design, implementation and evaluation of the system.
@@ -1361,6 +1368,8 @@ These checks assess the existence of one or more events in the stream. Similarly
 \fxnote*{New}{
 \subsubsection{Exist Events After}}
 
+\fix{Just to clarify, both Exist Events Before and After are successful if the condition is satisfied at least once from t1 to t2. If that is correct, then I somehow missed it in the description.}
+
 \begin{center}
 \bgroup
 \def\arraystretch{1.5}%
@@ -1930,7 +1939,7 @@ The library can be applied both as a testing support tool, expressing conditions
 To discuss the effectiveness of the event monitor tool we can focus on three aspects:
 \begin{itemize}
 	\item Event Stream Composition: it may be noted that, thanks to the available listeners and RxAndroid extensions, many events can be easily observed in an Android application, like user interaction on most View components, sensor data, broadcasts, etc. However, there are many events that cannot easily be observed, mainly because Android does not provide any listener on which to build the ReactiveX Observable (e.g. no listener is available to see when a View element becomes visible or hidden) or because it only allows to manage a single listener (e.g. only one focus change listener is allowed per View component and, if the developer uses one inside the production code of the application, RxJava cannot use another to build the Observable). This of course can limit the event stream composition and, as a consequence, the possible checks that can be expressed on it.
-	\item Assertions Language Expressiveness: the proposed assertion language allows to express temporal constraints (events can happen only after/before/between other events), causality (events must happen after/before/between other events), existence, ordering and quantification among events, as well as correlating check results via logic connectives. This expressiveness allows the developer to verify the most relevant conditions on the event stream. However, in the current implementation, the language does not allow to express more complex assertions like TODO("correlated" connective parts)
+	\item Assertions Language Expressiveness: the proposed assertion language allows to express temporal constraints (events can happen only after/before/between other events), causality (events must happen after/before/between other events), existence, ordering and quantification among events, as well as correlating check results via logic connectives. This expressiveness allows the developer to verify the most relevant conditions on the event stream. However, in the current implementation, the language does not allow to express more complex assertions like TODO("correlated" connective parts) \fix{Turn it around, explain that the first iteration of the prototype is capable of expressing the majority of temporal operators and is used as a proof of concept. Complex assertions like 'correlated' are left for the future work.}
 	\item Results Handling: the result of each consistency check contains an outcome (success, failure or warning) and a report message to understand its meaning. For example, the result of the check asserting that a text change event can only happen after a fragment started can contain the report \textit{The event $\left\{\mbox{Text change "MyText" from TextView1}\right\}$ was found before an event that is a fragment lifecycle event ON\_START}, which clearly shows what event made the check fail. Moreover, the event monitor offers the possibility of printing the whole event stream as it was registered during the execution, allowing the developer to analyze it to find possible causes of a bug.
 \end{itemize}
 
@@ -1940,7 +1949,7 @@ With regard to the consistency checks, the effort required for their specificati
 Finally, it may be noted that the library is not framework-specific. This means that it can be easily employed in any testing framework, like Espresso, Robolectric or the built-in instrumented unit testing, provided that it is able to observe all the required events in the application
 
 \subsection{Performance}
-The performance overhead introduced by the event-based testing library is, in general, negligible. The RxJava library provides a very lightweight and scalable event handling system and the implementation of the checks as Subscribers that perform very simple operations at each event of the stream make sure that in most situations the performance is not an issue. Moreover, the check logic is implemented in a separate thread from the main UI thread of the Android application, in order not to decrease the app responsiveness.\medskip \\
+The performance overhead introduced by the event-based testing library is, in general, negligible. \fix{Did you measure it? Can you put an approximate number here?} The RxJava library provides a very lightweight and scalable event handling system and the implementation of the checks as Subscribers that perform very simple operations at each event of the stream make sure that in most situations the performance is not an issue. Moreover, the check logic is implemented in a separate thread from the main UI thread of the Android application, in order not to decrease the app responsiveness.\medskip \\
 It can also be noted that is some situations it may be required to edit the production code to insert custom event firing, when a listener is not available. This, however, does not create any issue when the application is run outside the event-based test case. If the \texttt{EventMonitor} component is not initialized, any call to add observables, checks or fire custom events is ignored and so the performance is not degraded. Moreover, it is possible to completely remove these calls in "release" builds (e.g. the application is made available on the Play Store) with tools like ProGuard~\cite{ProGuard}.
 
 \subsection{Extensibility}
@@ -2005,7 +2014,7 @@ TODO add link to " in listing~\ref{lst_event_test}", " in listing~\ref{lst_event
 
 \fxnote*{New}{
 \section{Conclusions}
-This thesis presented a possible testing approach that focuses on the events generated during the execution of an Android application. It analyzed first a subset of events, lifecycle transitions, and then focused on a more generic concept of events.\medskip \\
+This thesis presented a possible \fix{possible? perhaps comprehensive, covering different development stages and tasks} testing approach that focuses on the events generated during the execution of an Android application. It analyzed first a subset of events, lifecycle transitions, and then focused on a more generic concept of events.\medskip \\
 Section \ref{section_lifecycle_static} proposed a static analysis approach for lifecycle testing, focusing on the management of selected components according to the host Activity/Fragment lifecycle. This approach is mainly useful in the early stages of development to warn the developer of possible criticalities, concerning performance or correctness.\medskip \\
 In section \ref{section_lifecycle_dynamic}, instead, it is reported the description of a dynamic approach for lifecycle testing. The idea is to provide a more complete support for lifecycle testing, hiding to the developers the complexity of driving the transitions and so allowing them to just focus on actions and assertions defined in the test case. The relevance of thoroughly testing an Activity or a Fragment with regard to its lifecycle is an important step to ensure confidence of correctness of the component, since lifecycle handling can often generate many issues.\medskip \\
 Part \ref{part_events} proposed an event-based testing library. The idea is to first build an event stream, observing different Android events defined by the developer, and then to express consistency checks on it, using a temporal assertions language. This allows to check for a specific type of race conditions and to assess existence, ordering and quantification of the events generated during the application execution.\medskip \\
@@ -2084,6 +2093,9 @@ TODO add code for espresso/eventbased comparison?
 %..............................................................................%
 
 \newpage
+
+\fix{You can merge all these bib files in one and reference just that one file}
+
 \bibliographystyle{unsrt}
 \bibliography{Bib/DEvA,Bib/CAFA,Bib/EventRacer,Bib/JUnit,Bib/Lint,Bib/Mockito,Bib/Oracles,Bib/ReactiveLocation,Bib/ReactiveNetwork,Bib/ReactiveSensors,Bib/Retrofit,Bib/Robolectric,Bib/RxAndroid,Bib/RxBinding,Bib/RxBroadcast,Bib/RxFileObserver,Bib/RxGoogleMaps,Bib/RxJava,Bib/RxLifecycle,Bib/RxPermissions,Bib/RxPreferences,Bib/RxWear,Bib/StorIO,Bib/THOR,Bib/CountingLogic,Bib/Hamcrest,Bib/Stats,Bib/InTheClear,Bib/TrackBuddy,Bib/WordPressApp,Bib/WordPressCMS,Bib/WordPress2015-12-06,Bib/WordPress2016-07-15,Bib/ERVA,Bib/SoftwareTestingAndAnalysis,Bib/Espresso,Bib/UIAutomator,Bib/monkeyrunner,Bib/UIExerciserMonkey,Bib/ProGuard,Bib/StaticLifecycleChecks,Bib/DynamicLifecycleTesting,Bib/EventBasedTesting,Bib/ReactiveX} 
 \addcontentsline{toc}{part}{References}
