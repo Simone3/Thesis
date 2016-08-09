@@ -798,7 +798,7 @@ In the proposed formalization, each check is described by:
 		\item $between(e2, e1, e3) \equiv before(e2, e1) \land before(e1, e3)$ means that the event \textit{e1} is generated in the sequence after \textit{e2} and before \textit{e3}, i.e. $e2 \prec e1 \prec e3$.
 	\end{itemize}
 	\item Visual representation: shows some examples of event streams and the corresponding check outcome. The outcome is placed in the spot where it is actually produced by the system: some checks may not need to explore the whole stream, if the condition is fulfilled or violated after an intermediate event the check "short-circuits".
-	\item Actual code example: an example of real call as implemented by the system. The structure of the Java classes and objects will be clear later when the implementation is explained in detail.
+	\item Real code example: an example of check specification as implemented by the system. The structure of the Java classes and objects will be clear later when the implementation is explained in detail.
 \end{itemize}
 
 
@@ -1455,7 +1455,7 @@ These checks assess the existence of one or more events in the stream. Similarly
   	\begin{lstlisting}
 	/* At least once, the service starts after a fragment initialization */
 	exist(
-		before(anEventThat(isStartService())),
+		before(anEventThat(isServiceStart(mainService))),
 		exactly(1))
 			.eventsWhereEach(isFragmentLifecycleEvent("onCreate"));
 	\end{lstlisting}
@@ -1509,8 +1509,8 @@ These checks assess the existence of one or more events in the stream. Similarly
   	\begin{lstlisting}
 	/* At least once, the service must query the database during its execution */
 	exist(
-		between(anEventThat(isStartService()),
-				anEventThat(isStopService())),
+		between(anEventThat(isServiceStart(mainService)),
+				anEventThat(isServiceStart(mainService))),
 		exactly(3))
 			.eventsWhereEach(isDatabaseQuery());
 	\end{lstlisting}
@@ -1802,19 +1802,23 @@ To implement the event-based testing approach described so far, the following ma
 	\item Results: the outcomes of the checks.
 	\item Event Monitor: the main interface of the system, receives the events, applies the checks and produces the results.
 \end{itemize}
-The following UML class diagram shows an abstract representation of the system:\\
-TODO PLACE UML HERE\\
-The \textit{EventMonitor} offers methods to add one or more \textit{EventGenerator} objects to define the event stream, to add one or more \textit{Check} objects to be verified and handles the \textit{Result} objects in some way (e.g. makes a test case fail if the \textit{Result} is a failure).\medskip \\
-Each \textit{Check} contains the logic of a consistency check: it receives each \textit{Event} of the stream in order and act accordingly. A \textit{Check} has the possibility to short-circuit its behavior (i.e. interrupt the stream of events if the consistency check succeeds or fails before the end of the sequence). In any case, when it short-circuits or the stream comes to an end, the \textit{Check} produces one and only one \textit{Result} object.\medskip \\
-Each \textit{Result} contains an \textit{Outcome} and a message describing it. In particular, an \textit{Outcome} can be a \textit{Success}, a \textit{Failure} and a \textit{Warning}. A \textit{Warning} outcome has not been included in the formal specifications of the checks in the previous section for simplicity: it's meaning is that the \textit{Check} succeeded with some minor error or in a particular situations (for example a check that specifies that an event A always generates exactly one event B may return \textit{Warning} if no event A has been found in the sequence).\medskip \\
+\begin{figure}\medskip
+  \centering
+  \includegraphics[height=\textheight]{Images/Event/UML/Design.jpg}
+  \caption[Event-Based Testing Design UML]{UML Diagram for the Event-Based Testing Design}
+  \label{fig:event_uml_design}
+\end{figure}
+Figure \ref{fig:event_uml_design} shows the design UML class diagram. The \textit{EventMonitor} offers methods to add one or more \textit{EventGenerator} objects to define the event stream, to add one or more \textit{Check} objects to be verified and handles the \textit{Result} objects in some way (e.g. makes a test case fail if the \textit{Result} is a failure).\medskip \\
+Each \textit{Check} contains the logic of a consistency check: it receives each \textit{Event} of the stream in order and acts accordingly. A \textit{Check} has the possibility to short-circuit its behavior (i.e. interrupt the stream of events if the consistency check succeeds or fails before the end of the sequence). In any case, when it short-circuits or the stream comes to an end, the \textit{Check} produces one and only one \textit{Result} object.\medskip \\
+Each \textit{Result} contains an \textit{Outcome} and a message describing it. In particular, an \textit{Outcome} can be a \textit{Success}, a \textit{Failure} and a \textit{Warning}. A \textit{Warning} outcome has not been included in the formal specifications of the checks in the previous section for simplicity: its meaning is that the \textit{Check} succeeded with some minor error or in a particular situations (for example a check that specifies that an event A always generates exactly one event B may return \textit{Warning} if no event A has been found in the sequence).\medskip \\
 A \textit{Descriptor} allows to specify a \textit{Check}. It describes one or more events of the stream and provides some methods to express a condition on those events. In particular, \textit{SingleEvent} describes a single event of a certain type at a time, \textit{SetOfEvents} describes a set of events of a certain type at a time and \textit{AllEvents} describes all the events of a certain type in the whole stream. To determine the type of the events identified by the \textit{Descriptor}, a \textit{Matcher} object is used.\medskip \\
-The cardinality of the descriptor \textit{SetOfEvents} is defined by a \textit{Quantifier} that has an integer values as input. A quantifier can be \textit{Exactly}, \textit{AtMost} or \textit{AtLeast}.\medskip \\
+The cardinality of the descriptor \textit{SetOfEvents} is defined by a \textit{Quantifier} that has an integer value as input. A quantifier can be \textit{Exactly}, \textit{AtMost} or \textit{AtLeast}.\medskip \\
 Finally, a \textit{CheckConnective} allows to transform one or more \textit{Check} objects into a single \textit{Check}, i.e. it specifies one of the standard logic connectives \textit{Not}, \textit{And}, \textit{Or}, \textit{SingleImplication} and \textit{DoubleImplication}.
 
 \section{Implementation}
 
-For the implementation of event-based testing, the ReactiveX library was chosen. This innovative reactive programming paradigm focuses on data flow: this means generating (statically or dynamically) a flow of events, propagate them and allow interested components to react to them. The idea of reactive programming is fire-and-forget messaging: send a request and asynchronously wait for the response to be ready or, even more importantly, if we are dealing with response sets wait for individual results to be forwarded (without waiting for the whole set to be computed).\bigskip \\
-In the next sections a more detailed introduction to the ReactiveX library is presented, followed by the implementation of the actual event-based testing system.
+For the implementation of event-based testing~\cite{EventBasedTesting}, the ReactiveX library~\cite{ReactiveX} was chosen. This innovative reactive programming paradigm focuses on data flow: this means generating (statically or dynamically) and propagating a flow of events, allowing interested components to react to them. The idea of reactive programming is fire-and-forget messaging: send a request and asynchronously wait for the response to be ready or, even more importantly, in case of response sets wait for individual results to be forwarded (without waiting for the whole set to be computed).\bigskip \\
+In the next sections a more detailed introduction to the ReactiveX library is presented, followed by the implementation of the proposed event-based testing testing tool.
 
 \subsection{ReactiveX}
 The Reactive Extensions (ReactiveX or Rx) are a reactive programming library to compose asynchronous and event-based programs. As defined by its authors, ReactiveX is a combination of the best ideas from:
@@ -1842,7 +1846,7 @@ The advantages of the Rx paradigm are:
 	\item Easy concurrency: Rx allows to easily specify in which threads the components should be run, without worrying about implementation details.
 	\item Extensible: a developer can define custom Observables, Operators and Subscribers to achieve anything an application may require.
 \end{itemize}
-The characteristics of ReactiveX make this programming paradigm very suitable for many applications. It is successfully employed in industry: examples of users of Rx are Microsoft, Netflix and GitHub.
+The characteristics of ReactiveX make this programming paradigm very suitable for many applications. It is successfully employed in industry: examples of users are Microsoft, Netflix and GitHub.
 
 \subsection{RxJava and RxAndroid}
 RxJava~\cite{RxJava} is the Java implementation of ReactiveX. It is an open source project initially developed by Netflix for server-side concurrency. The main reason for its adoption and development was to avoid Java Futures (results of asynchronous computation) and callbacks because both are expensive when composed, especially if nested.\smallskip \\
@@ -1873,11 +1877,14 @@ Several modules allow Android developers to observe many events inside an applic
 The utility module RxLifecycle~\cite{RxLifecycle} allows to bind the listed observables to the lifecycle of an Activity or a Fragment to avoid leaks. For example, without any binding to the lifecycle, an observable that emits text change events on a TextView never ends (i.e. never calls \texttt{onCompleted()} or \texttt{onError()}) because it has no way of understanding when the text stops changing. In that situation the observable will run even after the Activity has been removed and, keeping its reference, won't allow the garbage collector to delete the instance (memory leak). Thanks to RxLifecycle the developer can bind the observable until a lifecycle event occurs (e.g. activity is stopped), allowing it to terminate correctly.
 
 \subsection{The System}
-The structure of the actual implementation of event-based testing is similar to what has been designed in section \ref{event_design}. A class diagram of the system is proposed, followed by more detailed explanations of the main components.\medskip \\
-
-[TODO PUT UML DIAGRAM HERE]\medskip \\
-
-Before starting the detailed explanation of the system, note that many classes, like the descriptors, have a private constructor and a static method to create an instance. Similarly to the standard way of building assertions in JUnit, this is just syntactic sugar that allows to statically import the methods and to avoid writing the \texttt{new} keyword. These methods, and as a consequence their classes, are worded as close as possible to the English language: for example, the descriptor for single events is not called \textit{SingleEvent} but \texttt{AnEventThat} in order to build readable statements like:
+The structure of the implementation of event-based testing is similar to what has been designed in section \ref{event_design}.\bigskip \\
+\begin{figure}
+  \centering
+  \includegraphics[height=\textheight]{Images/Event/UML/Implementation.jpg}
+  \caption[Event-Based Testing Implementation UML]{UML Diagram for the Event-Based Testing Implementation}
+  \label{fig:event_uml_implementation}
+\end{figure}
+A class diagram of the system is proposed in figure \ref{fig:event_uml_implementation}. Before starting the detailed explanation, note that many classes, like the descriptors, have a private constructor and a static method to create an instance. Similarly to the standard way of building assertions in JUnit, this is just syntactic sugar that allows to statically import the methods and to avoid writing the \texttt{new} keyword. These methods, and as a consequence their classes, are worded as close as possible to the English language: for example, the descriptor for single events is not called \textit{SingleEvent} but \texttt{AnEventThat} in order to build readable statements like:
 \begin{lstlisting}
 anEventThat(isTextChange())
 	.mustHappenAfter(anEventThat(isButtonClick())
@@ -1885,7 +1892,7 @@ anEventThat(isTextChange())
 
 \subsection{Event Monitor}
 The \texttt{EventMonitor} is a singleton class that is set up via the \texttt{initialize()} method. Once this is done, the developer can add observables via \texttt{observe(Observable)} to build the event stream and checks via \texttt{checkThat(String, Check)}.\medskip \\
-At this point a call to \texttt{startVerification(Subscriber<Event>, Subscriber<Result>)} is performed to start the validation process on the defined stream: the two subscribers are used by the developer to receive all the events of the stream in order and all the results of the checks respectively. The class provides some static methods to get simple pre-generated subscribers for this purpose, e.g. passing \texttt{EventMonitor.getAssertionErrorResultsSubscriber()} as the second parameter the app crashes (or makes the test case fail) if a failure result is found.\medskip \\
+At this point a call to \texttt{startVerification(Subscriber<Event>, Subscriber<Result>)} is performed to start the validation process on the defined stream: the two Rx subscribers are used by the developer to receive all the events of the stream in order and all the results of the checks respectively. The class provides some static methods to get simple pre-generated subscribers for this purpose, e.g. passing \texttt{EventMonitor.getAssertionErrorResultsSubscriber()} as the second parameter the app crashes (or makes the test case fail) if a failure result is found.\medskip \\
 When the developer calls \texttt{stopVerification()} the stream is interrupted and all the remaining check results are generated.\medskip \\
 Finally, the class also provides the utility method \texttt{fireCustomEvent(Event)} that allows to directly generate an \texttt{Event} without creating an \texttt{Observable}.\medskip \\
 Note that the \texttt{EventMonitor} observes the events on the thread specified by each observable (usually the main thread) and runs the checks in a separate thread to avoid possible slowdowns of the UI thread.\medskip \\
@@ -1906,13 +1913,13 @@ Connectives between checks are implementations of \texttt{CheckConnective}, whic
 
 \subsection{Descriptors}
 The descriptors are subclasses of \texttt{AbstractEventDescriptor}. \texttt{AnEventThat} (single event) and \texttt{AllEventsWhereEach} (all the events in the whole stream) provide static constructors, while \texttt{EventsWhereEach} descriptors (sets of events) do not provide one because they are built starting from a quantifier, e.g. \texttt{exactly(10).eventsWhereEach(...)}.\medskip \\
-The \texttt{Exist} class provides the means to express the existential quantifiers, i.e. \texttt{existsAnEventThat(...)} and \texttt{exist(...).eventsWhereEach(...)}. \fxnote*{New}{The latter type uses quantifiers and constraints to define the cardinality of the set in the first case and the possible validity interval in the second.\medskip \\
-Existential constraints are subclasses of \texttt{AbstractExistConstraint}. They simply implement an abstract method to define the constraint logic and provide a static method to be used in the existential check expressions.}\medskip \\
+The \texttt{Exist} class provides the means to express the existential quantifiers, i.e. \texttt{existsAnEventThat(...)} and \texttt{exist(...).eventsWhereEach(...)}. The latter type uses quantifiers and constraints to define the cardinality of the set in the first case and the possible validity interval in the second.\medskip \\
+Existential constraints are subclasses of \texttt{AbstractExistConstraint}. They simply implement an abstract method to define the constraint logic and provide a static method to be used in the existential check expressions.\medskip \\
 Quantifiers are subclasses of \texttt{AbstractQuantifier}. Each of them uses an internal counter and overrides several methods like \texttt{isConditionMet()} and \texttt{canStopCurrentComputation()} to implement its logic. All of them have a private constructor and a static method like the descriptors.\medskip \\
 The matchers that describe the type of events identified by each descriptor are implemented using the external library JavaHamcrest~\cite{Hamcrest}, a well known way to describe objects. The library provides several matchers on the most common objects (like Strings, e.g. \texttt{isEmptyString()}, \texttt{startsWith(String)}, etc.), some connectives to compose matchers (e.g. \texttt{allOf(Matcher...)}) and the means to implement custom matchers, which have been used to define matchers for the events.
 
-\section{Evaluation}
-\fxnote*{New}{
+\fxnote*{New}{\section{Evaluation}}
+
 \subsection{Applicability}
 The event-based testing library is most suitable for applications that are characterized by a high number of different operations that can possibly run concurrently. This usually means applications that heavily employ the network (i.e. that query the web in background), the device sensors (e.g. receive GPS events to update a map) and/or, in general, that perform several sub-routines in parallel thanks to Services and threads.\medskip \\
 However, the library may be applicable also to more "sequential" applications, especially for the event counting and ordering capabilities, e.g. the developer might be interested in easily quantifying the number of click events during a particular execution.\medskip \\
@@ -1985,7 +1992,7 @@ TODO add link to " in listing~\ref{lst_event_test}", " in listing~\ref{lst_event
 - show the outcomes with the messages
 - + list of all events?
 
-}
+
 
 
 
@@ -2078,7 +2085,7 @@ TODO add code for espresso/eventbased comparison?
 
 \newpage
 \bibliographystyle{unsrt}
-\bibliography{Bib/DEvA,Bib/CAFA,Bib/EventRacer,Bib/JUnit,Bib/Lint,Bib/Mockito,Bib/Oracles,Bib/ReactiveLocation,Bib/ReactiveNetwork,Bib/ReactiveSensors,Bib/Retrofit,Bib/Robolectric,Bib/RxAndroid,Bib/RxBinding,Bib/RxBroadcast,Bib/RxFileObserver,Bib/RxGoogleMaps,Bib/RxJava,Bib/RxLifecycle,Bib/RxPermissions,Bib/RxPreferences,Bib/RxWear,Bib/StorIO,Bib/THOR,Bib/CountingLogic,Bib/Hamcrest,Bib/Stats,Bib/InTheClear,Bib/TrackBuddy,Bib/WordPressApp,Bib/WordPressCMS,Bib/WordPress2015-12-06,Bib/WordPress2016-07-15,Bib/ERVA,Bib/SoftwareTestingAndAnalysis,Bib/Espresso,Bib/UIAutomator,Bib/monkeyrunner,Bib/UIExerciserMonkey,Bib/ProGuard,Bib/StaticLifecycleChecks,Bib/DynamicLifecycleTesting} 
+\bibliography{Bib/DEvA,Bib/CAFA,Bib/EventRacer,Bib/JUnit,Bib/Lint,Bib/Mockito,Bib/Oracles,Bib/ReactiveLocation,Bib/ReactiveNetwork,Bib/ReactiveSensors,Bib/Retrofit,Bib/Robolectric,Bib/RxAndroid,Bib/RxBinding,Bib/RxBroadcast,Bib/RxFileObserver,Bib/RxGoogleMaps,Bib/RxJava,Bib/RxLifecycle,Bib/RxPermissions,Bib/RxPreferences,Bib/RxWear,Bib/StorIO,Bib/THOR,Bib/CountingLogic,Bib/Hamcrest,Bib/Stats,Bib/InTheClear,Bib/TrackBuddy,Bib/WordPressApp,Bib/WordPressCMS,Bib/WordPress2015-12-06,Bib/WordPress2016-07-15,Bib/ERVA,Bib/SoftwareTestingAndAnalysis,Bib/Espresso,Bib/UIAutomator,Bib/monkeyrunner,Bib/UIExerciserMonkey,Bib/ProGuard,Bib/StaticLifecycleChecks,Bib/DynamicLifecycleTesting,Bib/EventBasedTesting,Bib/ReactiveX} 
 \addcontentsline{toc}{part}{References}
 
 \end{document}
