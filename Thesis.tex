@@ -70,6 +70,7 @@
 \usepackage[parfill]{parskip}
 
 % For links (should be the last included)
+\usepackage{url}
 \usepackage{hyperref}
 \hypersetup
 {
@@ -77,7 +78,7 @@
     citecolor=black,
     filecolor=black,
     linkcolor=black,
-    urlcolor=blue
+    urlcolor=black
 }
 \usepackage{ulem}
 
@@ -243,7 +244,7 @@ Figure \ref{fig:act_lifec} shows a simplified scheme, with the corresponding Jav
 \begin{figure}
   \centering
   \includegraphics[width=\textwidth]{Images/Android/basic-lifecycle.png}
-  \caption[Activity lifecycle]{Simplified scheme of the Activity lifecycle. Source: https://developer.android.com/training/basics/activity-lifecycle/starting.html\#lifecycle-states}
+  \caption[Activity lifecycle]{Simplified scheme of the Activity lifecycle. Source: \url{https://developer.android.com/training/basics/activity-lifecycle/starting.html\#lifecycle-states}}
   \label{fig:act_lifec}
 \end{figure}
 
@@ -262,7 +263,7 @@ Another characteristic of Fragments is that their instance can be retained, if t
 \begin{figure}
   \centering
   \includegraphics[width=180px]{Images/Android/fragment_lifecycle.png}
-  \caption[Fragment lifecycle]{Main fragment lifecycle callbacks. Source: https://developer.android.com/guide/components/fragments.html\#Creating}
+  \caption[Fragment lifecycle]{Main fragment lifecycle callbacks. Source: \url{https://developer.android.com/guide/components/fragments.html\#Creating}}
   \label{fig:fra_lifec}
 \end{figure}
 
@@ -341,7 +342,7 @@ Events from a single thread are atomic, i.e. they are placed in a FIFO event que
 \begin{figure}
   \centering
   \includegraphics[width=300px]{Images/Android/event-driven.png}
-  \caption[Android event handling]{Simplified scheme of Android event handling. Source: https://guides.codepath.com/android/Repeating-Periodic-Tasks}
+  \caption[Android event handling]{Simplified scheme of Android event handling. Source: \url{https://guides.codepath.com/android/Repeating-Periodic-Tasks}}
 \end{figure}
 
 
@@ -381,7 +382,7 @@ White-box unit testing in Android can be:
 \begin{figure}
   \centering
   \includegraphics[width=250px]{Images/Android/test-types.png}
-  \caption[Local and instrumented Android tests]{Local and instrumented Android tests. Source: https://developer.android.com/training/testing/start/index.html\#test-types}
+  \caption[Local and instrumented Android tests]{Local and instrumented Android tests. Source: \url{https://developer.android.com/training/testing/start/index.html\#test-types}}
 \end{figure}
 
 \section{UI Testing}
@@ -524,39 +525,39 @@ The selected components for static lifecycle analysis are:
 \begin{itemize}
 	\item Broadcast Receiver: it allows to receive messages from the system or another application component.
 	\begin{itemize}
-		\item Release: the official documentation states that a Broadcast Receiver, if registered with an Activity context (as it is usually the case), should ideally be unregistered before the Activity is done being destroyed, but if it not so the system will clean up the leaked registration anyway and only log an error. In case the receiver is registered using the Application context, however, it will be never unregistered by the system, so missing a call to the unregister method may lead to significant leaks\footnote{https://developer.android.com/reference/android/content/Context.html\#getApplicationContext()}. Moreover, it is reported that the developer should not unregister during an Activity \texttt{onSaveInstanceState()} method, because it won't be called if the user moves back in the history stack\footnote{https://developer.android.com/reference/android/content/BroadcastReceiver.html}.
-		\item Best Practices: the only official recommendation on how to handle a Broadcast Receiver in accordance to the lifecycle of the Activity/Fragment that uses it is to unregister it during \texttt{onPause()} if it is registered during \texttt{onResume()}\footnote{https://developer.android.com/reference/android/content/BroadcastReceiver.html}. The common usage of the receiver is to register during \texttt{onResume()} or \texttt{onStart()} and to unregister during \texttt{onPause()} or \texttt{onStop()} respectively.
+		\item Release: the official documentation states that a Broadcast Receiver, if registered with an Activity context (as it is usually the case), should ideally be unregistered before the Activity is done being destroyed, but if it not so the system will clean up the leaked registration anyway and only log an error. In case the receiver is registered using the Application context, however, it will be never unregistered by the system, so missing a call to the unregister method may lead to significant leaks\footnote{\url{https://developer.android.com/reference/android/content/Context.html\#getApplicationContext()}}. Moreover, it is reported that the developer should not unregister during an Activity \texttt{onSaveInstanceState()} method, because it won't be called if the user moves back in the history stack\footnote{\url{https://developer.android.com/reference/android/content/BroadcastReceiver.html}}.
+		\item Best Practices: the only official recommendation on how to handle a Broadcast Receiver in accordance to the lifecycle of the Activity/Fragment that uses it is to unregister it during \texttt{onPause()} if it is registered during \texttt{onResume()}\footnote{\url{https://developer.android.com/reference/android/content/BroadcastReceiver.html}}. The common usage of the receiver is to register during \texttt{onResume()} or \texttt{onStart()} and to unregister during \texttt{onPause()} or \texttt{onStop()} respectively.
 		\item Double Instantiation: registering twice a Broadcast Receiver with the same parameters does not create any correctness issue and the complexity of the method is negligible, so there's no need to check double instantiation for this component. However, if the Broadcast Receiver is unregistered twice the system throws an \texttt{IllegalArgumentException}, so it might be useful to warn the developer in advance if two calls are detected.
 	\end{itemize}
 	\item Google API Client: the \texttt{GoogleApiClient} class allows to connect to the Google Play services for several APIs, like Google+, Google Drive, wearables, etc. The developer can either manage the connection manually or leave it to the system. The following specifications are of course valid for the former case.
 	\begin{itemize}
 		\item Release: the API Client should always be disconnected when the application is done using it. This fact is not clearly stated in the documentation, but, given the best practices described in the next element, it is safe to assume that it is required.
-		\item Best Practices: the official recommendation is to connect during \texttt{onStart()} and to disconnect during \texttt{onStop()}\footnote{https://developers.google.com/android/guides/api-client\#start\_a\_manually\_managed\_connection}. \fix{use package \texttt{url} and wrap the references in it, should simplify your life}
-		\item Double Instantiation: it is not a problem since the call to \texttt{connect()} returns immediately if the client is already connected or connecting\footnote{https://developers.google.com/android/reference/com/google/android/gms/common/api/GoogleApiClient\#public-methods}.
+		\item Best Practices: the official recommendation is to connect during \texttt{onStart()} and to disconnect during \texttt{onStop()}\footnote{\url{https://developers.google.com/android/guides/api-client\#start_a_manually_managed_connection}}.
+		\item Double Instantiation: it is not a problem since the call to \texttt{connect()} returns immediately if the client is already connected or connecting\footnote{\url{https://developers.google.com/android/reference/com/google/android/gms/common/api/GoogleApiClient\#public-methods}}.
 	\end{itemize}
 	\item Fused Location Provider API: the \texttt{FusedLocationProviderApi} class allows to query information about the current location. In particular, we are interested in the functionality that allows to receive periodic updates.
 	\begin{itemize}
 		\item Release: the location updates should be removed by calling the \texttt{removeLocationUpdates()} method.
-		\item Best Practices: the official documentation encourages the developer to think whether it may be useful to stop the location updates when the Activity is no longer in focus, to reduce power consumption while the app is in background\footnote{https://developer.android.com/training/location/receive-location-updates.html\#stop-updates}.
-		\item Double Instantiation: does not need to be considered since any previous location updates are replaced by the call to \texttt{requestLocationUpdates()}\footnote{https://developers.google.com/android/reference/com/google/android/gms/location/FusedLocationProviderApi\#public-methods}.
+		\item Best Practices: the official documentation encourages the developer to think whether it may be useful to stop the location updates when the Activity is no longer in focus, to reduce power consumption while the app is in background\footnote{\url{https://developer.android.com/training/location/receive-location-updates.html\#stop-updates}}.
+		\item Double Instantiation: does not need to be considered since any previous location updates are replaced by the call to \texttt{requestLocationUpdates()}\footnote{\url{https://developers.google.com/android/reference/com/google/android/gms/location/FusedLocationProviderApi\#public-methods}}.
 	\end{itemize}
 	\item Camera:
 		\begin{itemize}
 			\item \texttt{Camera} class: this is the older API to control the device camera, deprecated in API level 21 (Lollipop).
 			\begin{itemize}
-				\item Release: releasing the camera is fundamental. Failing to do so means that all the applications on the device will be unable to use it\footnote{https://developer.android.com/reference/android/hardware/Camera.html\#release()}.
-				\item Best Practices: the best practice is to acquire the camera during \texttt{onResume()} and release it during \texttt{onPause()}\footnote{https://developer.android.com/reference/android/hardware/Camera.html}.
-				\item Double Instantiation: if the developer tries to acquire the camera twice, the system will throw a runtime exception\footnote{https://developer.android.com/reference/android/hardware/Camera.html\#open(int)}.
+				\item Release: releasing the camera is fundamental. Failing to do so means that all the applications on the device will be unable to use it\footnote{\url{https://developer.android.com/reference/android/hardware/Camera.html\#release()}}.
+				\item Best Practices: the best practice is to acquire the camera during \texttt{onResume()} and release it during \texttt{onPause()}\footnote{\url{https://developer.android.com/reference/android/hardware/Camera.html}}.
+				\item Double Instantiation: if the developer tries to acquire the camera twice, the system will throw a runtime exception\footnote{\url{https://developer.android.com/reference/android/hardware/Camera.html\#open(int)}}.
 			\end{itemize}
 			\item \texttt{camera2} package: this is the new API introduced in Android Lollipop to manage the device camera
 			\begin{itemize}
-				\item Release: although the documentation does not clearly state that the developer \textit{must} release the components, the objects used to manage the camera such as \texttt{ImageReader}\footnote{https://developer.android.com/reference/android/media/ImageReader.html\#close()}, \texttt{CameraDevice}\footnote{https://developer.android.com/reference/android/hardware/camera2/CameraDevice.html\#close()}, \texttt{CameraCaptureSession}\footnote{https://developer.android.com/reference/android/hardware/camera2/CameraCaptureSession.html\#close()}, etc. all provide a \texttt{close()} method to release the resource. In the sample application provided by Google\footnote{https://github.com/googlesamples/android-Camera2Basic/blob/master/Application/src/main/java/com/example/android/camera2basic/Camera2BasicFragment.java} these methods are all called during \texttt{onPause()} and a \texttt{Semaphore} is used "to prevent the app from exiting before closing the camera", so it is safe to assume that releasing these resources is required.
-				\item Double Instantiation: methods to acquire the components like \texttt{setRepeatingRequest()}\footnote{https://developer.android.com/reference/android/hardware/camera2/CameraCaptureSession.html\#setRepeatingRequest(android.hardware.camera2.CaptureRequest, android.hardware.camera2.CameraCaptureSession.CaptureCallback, android.os.Handler)}, \texttt{createCaptureSession()}\footnote{https://developer.android.com/reference/android/hardware/camera2/CameraDevice.html\#createCaptureSession(java.util.List<Candroid.view.Surface>, android.hardware.camera2.CameraCaptureSession.StateCallback, android.os.Handler)}, etc. replace the previous calls. For this reason, there's no need to check double instantiation for correctness, but since the time complexity of most of these calls is significant (e.g. \texttt{createCaptureSession()} "can take several hundred milliseconds") it can be checked for performance reasons.
+				\item Release: although the documentation does not clearly state that the developer \textit{must} release the components, the objects used to manage the camera such as \texttt{ImageReader}\footnote{\url{https://developer.android.com/reference/android/media/ImageReader.html\#close()}}, \texttt{CameraDevice}\footnote{\url{https://developer.android.com/reference/android/hardware/camera2/CameraDevice.html\#close()}}, \texttt{CameraCaptureSession}\footnote{\url{https://developer.android.com/reference/android/hardware/camera2/CameraCaptureSession.html\#close()}}, etc. all provide a \texttt{close()} method to release the resource. In the sample application provided by Google\footnote{\url{https://github.com/googlesamples/android-Camera2Basic/blob/master/Application/src/main/java/com/example/android/camera2basic/Camera2BasicFragment.java}} these methods are all called during \texttt{onPause()} and a \texttt{Semaphore} is used "to prevent the app from exiting before closing the camera", so it is safe to assume that releasing these resources is required.
+				\item Double Instantiation: methods to acquire the components like \texttt{setRepeatingRequest()}\footnote{\url{https://developer.android.com/reference/android/hardware/camera2/CameraCaptureSession.html\#setRepeatingRequest(android.hardware.camera2.CaptureRequest, android.hardware.camera2.CameraCaptureSession.CaptureCallback, android.os.Handler)}}, \texttt{createCaptureSession()}\footnote{\url{https://developer.android.com/reference/android/hardware/camera2/CameraDevice.html\#createCaptureSession(java.util.List<Candroid.view.Surface>, android.hardware.camera2.CameraCaptureSession.StateCallback, android.os.Handler)}}, etc. replace the previous calls. For this reason, there's no need to check double instantiation for correctness, but since the time complexity of most of these calls is significant (e.g. \texttt{createCaptureSession()} "can take several hundred milliseconds") it can be checked for performance reasons.
 			\end{itemize}
 		\end{itemize}
 	\item Ads View: the \texttt{AdView} class is a View used to display banner advertisements.
 	\begin{itemize}
-		\item Best Practices: the class provides methods like \texttt{destroy()}, \texttt{pause()}, etc. that should be called in the Activity/Fragment lifecycle methods with similar name (\texttt{onDestroy()}, \texttt{onPause()}, etc.)\footnote{https://developers.google.com/android/reference/com/google/android/gms/ads/AdView}.
+		\item Best Practices: the class provides methods like \texttt{destroy()}, \texttt{pause()}, etc. that should be called in the Activity/Fragment lifecycle methods with similar name (\texttt{onDestroy()}, \texttt{onPause()}, etc.)\footnote{\url{https://developers.google.com/android/reference/com/google/android/gms/ads/AdView}}.
 	\end{itemize}
 \end{itemize}
 
@@ -668,8 +669,8 @@ Finally, the \texttt{LifecycleIssuesRegistry} simply sends the \texttt{Issue} ob
 \subsubsection{Real-World Application}
 Since the lifecycle static checks are effective mostly in the early stages of development, it is not an easy task to find significant real-world examples of applications that may benefit from them. However, searching for open-source applications on the GitHub platform, the following examples may be found:
 \begin{itemize}
-	\item InTheClear~\cite{InTheClear} is an application for alerting during emergencies. Before commit \textit{cabfc26}\footnote{https://github.com/SaferMobile/InTheClear/commit/cabfc2643bc5820e109433a8ae48f9f6a0788d9f} a Broadcast Receiver was registered but never unregistered in the \texttt{SMSSender} class. Using the static lifecycle tests the developers would have detected the issue immediately, without the need to receive the log notification and open the issue \#56\footnote{https://github.com/SaferMobile/InTheClear/issues/56}.
-	\item TrackBuddy~\cite{TrackBuddy} is an SMS tracker application. Commit \textit{007b6f7}\footnote{https://github.com/byteShaft/TrackBuddy/commit/007b6f7acb39e90d53ef38577d212927fae19d91} solves a bug in \texttt{LocationService}, which was missing a GoogleApiClient disconnection, a problem that would have been detected by lifecycle checks.
+	\item InTheClear~\cite{InTheClear} is an application for alerting during emergencies. Before commit \textit{cabfc26}\footnote{\url{https://github.com/SaferMobile/InTheClear/commit/cabfc2643bc5820e109433a8ae48f9f6a0788d9f}} a Broadcast Receiver was registered but never unregistered in the \texttt{SMSSender} class. Using the static lifecycle tests the developers would have detected the issue immediately, without the need to receive the log notification and open the issue \#56\footnote{\url{https://github.com/SaferMobile/InTheClear/issues/56}}.
+	\item TrackBuddy~\cite{TrackBuddy} is an SMS tracker application. Commit \textit{007b6f7}\footnote{\url{https://github.com/byteShaft/TrackBuddy/commit/007b6f7acb39e90d53ef38577d212927fae19d91}} solves a bug in \texttt{LocationService}, which was missing a GoogleApiClient disconnection, a problem that would have been detected by lifecycle checks.
 \end{itemize}
 
 \section{Dynamic Analysis}\label{section_lifecycle_dynamic}
@@ -720,7 +721,7 @@ The defined tests are:
 		\item \texttt{onResume()}
 		\item \textit{Actions and assertions after the stop}
 	\end{itemize}
-	\item Destruction: simulates the component being closed (e.g. back button pressed or the application is killed by the system). In this case two different tests are defined, one where \texttt{onDestroy()} is called and another one where it is not, since in a real application this call is not guaranteed\footnote{https://developer.android.com/reference/android/app/Activity.html\#onDestroy()}. This test case can be used for example to see if the component stops all computations and, if needed, stores unsaved data in memory.
+	\item Destruction: simulates the component being closed (e.g. back button pressed or the application is killed by the system). In this case two different tests are defined, one where \texttt{onDestroy()} is called and another one where it is not, since in a real application this call is not guaranteed\footnote{\url{https://developer.android.com/reference/android/app/Activity.html\#onDestroy()}}. This test case can be used for example to see if the component stops all computations and, if needed, stores unsaved data in memory.
 	\begin{itemize}
 		\item \texttt{onCreate()}
 		\item \texttt{onStart()}
@@ -792,7 +793,7 @@ Activity Test Rule tests are covered by the \texttt{ActivityRuleLifecycleTest} c
 \subsubsection{Real-World Application} \fix{Do you provide listings of the generated tests? If not, could you please add short code snippets showing how your tests will look like for the three cases. And mention if developers have added any new test cases.}
 To prove the lifecycle tests effectiveness, the library has been applied to WordPress~\cite{WordPressApp}, the Android application that allows to manage directly from mobile devices the websites created with the well-known content management system WordPress~\cite{WordPressCMS}.
 
-The evaluation has been performed by applying the same lifecycle tests first on an old version of the application (at commit \textit{9f9cb12}\footnote{https://github.com/wordpress-mobile/WordPress-Android/commit/9f9cb12bb1d8a82d60897b5c3ff954c2f88de4f2} on December 6, 2015)~\cite{WordPress2015-12-06} and then on the latest version at the time of writing (at commit \textit{bfdf611}\footnote{https://github.com/wordpress-mobile/WordPress-Android/commit/bfdf611c6a37ddd1fad1980f73a00389b2e22677} on July 15, 2016)~\cite{WordPress2016-07-15}. In the six months elapsed between the two versions some lifecycle issues were discovered and fixed, and so the idea is to show that the defined tests fail in the older version while they succeed in the newer one.
+The evaluation has been performed by applying the same lifecycle tests first on an old version of the application (at commit \textit{9f9cb12}\footnote{\url{https://github.com/wordpress-mobile/WordPress-Android/commit/9f9cb12bb1d8a82d60897b5c3ff954c2f88de4f2}} on December 6, 2015)~\cite{WordPress2015-12-06} and then on the latest version at the time of writing (at commit \textit{bfdf611}\footnote{\url{https://github.com/wordpress-mobile/WordPress-Android/commit/bfdf611c6a37ddd1fad1980f73a00389b2e22677}} on July 15, 2016)~\cite{WordPress2016-07-15}. In the six months elapsed between the two versions some lifecycle issues were discovered and fixed, and so the idea is to show that the defined tests fail in the older version while they succeed in the newer one.
 
 The defined tests are:
 \begin{itemize}
@@ -800,8 +801,8 @@ The defined tests are:
 	\begin{itemize}
 		\item Bug Category: usability, correctness
 		\item Lifecycle Transition: rotation
-		\item Linked Issue: \#3608\footnote{https://github.com/wordpress-mobile/WordPress-Android/issues/3608}
-		\item Fixed In: pull request \#3912\footnote{https://github.com/wordpress-mobile/WordPress-Android/pull/3912} 
+		\item Linked Issue: \#3608\footnote{\url{https://github.com/wordpress-mobile/WordPress-Android/issues/3608}}
+		\item Fixed In: pull request \#3912\footnote{\url{https://github.com/wordpress-mobile/WordPress-Android/pull/3912}}
 		\item Problem Description: in the profile page, if the user typed a value (e.g. his/her name) and then rotated the device, the inserted data would be lost.
 		\item Test: the lifecycle test, defined in Espresso, exploits the rotation callback by first typing the name value and then, after the transition, asserting the input contents. The source code of the test can be found in listing~\ref{lst_lifecycle_wp}.
 		\item Causes and Solutions: the bug was caused by not saving the instance of the views at the device rotation. The chosen solution was to employ a \texttt{DialogFragment} component that automatically manages button and dialog, including their lifecycle.
@@ -810,8 +811,8 @@ The defined tests are:
 	\begin{itemize}
 		\item Bug Category: correctness
 		\item Lifecycle Transition: pause/stop
-		\item Linked Issue: \#3575\footnote{https://github.com/wordpress-mobile/WordPress-Android/issues/3575}
-		\item Fixed In: pull request \#3577\footnote{https://github.com/wordpress-mobile/WordPress-Android/pull/3577} 
+		\item Linked Issue: \#3575\footnote{\url{https://github.com/wordpress-mobile/WordPress-Android/issues/3575}}
+		\item Fixed In: pull request \#3577\footnote{\url{https://github.com/wordpress-mobile/WordPress-Android/pull/3577}}
 		\item Problem Description: reading a long blog post, pausing and resuming the application caused most of the content to be invisible to the user.
 		\item Test: the Espresso lifecycle test opens a blog post, scrolls down and, after the pause, checks that all the content is displayed.
 		\item Causes and Solutions: the \texttt{WebView} component used to display the page was paused during \texttt{onPause()} but not resumed during \texttt{onResume()}, and so the simple solution of the bug was to add the latter call.
@@ -820,11 +821,11 @@ The defined tests are:
 	\begin{itemize}
 		\item Bug Category: usability
 		\item Lifecycle Transition: rotation
-		\item Linked Issue: \#3948\footnote{https://github.com/wordpress-mobile/WordPress-Android/issues/3948}
-		\item Fixed In: pull request \#4127\footnote{https://github.com/wordpress-mobile/WordPress-Android/pull/4127} 
+		\item Linked Issue: \#3948\footnote{\url{https://github.com/wordpress-mobile/WordPress-Android/issues/3948}}
+		\item Fixed In: pull request \#4127\footnote{\url{https://github.com/wordpress-mobile/WordPress-Android/pull/4127}}
 		\item Problem Description: in the settings page, if the user accessed the notifications-specific area and then rotated the device, he/she was redirected back to the general settings screen. 
 		\item Test: the Espresso lifecycle test first opens the settings page and clicks on the notifications section button, then after the rotation checks if the same page is still displayed.
-		\item Causes and Solutions: the bug was caused by the missing \texttt{NotificationsSettingsActivity} rotation handling. To solve the issue, the developers decided to simply add \texttt{android:configChanges=\char`\"orientation|screenSize\char`\"} in the application manifest, to override the automatic recreation of the Activity after the rotation. This solution was chosen for consistency with the other Activities of the application, but it is not ideal since the Android developers themselves suggest it only as a last resort\footnote{https://developer.android.com/guide/topics/manifest/activity-element.html}.
+		\item Causes and Solutions: the bug was caused by the missing \texttt{NotificationsSettingsActivity} rotation handling. To solve the issue, the developers decided to simply add \texttt{android:configChanges=\char`\"orientation|screenSize\char`\"} in the application manifest, to override the automatic recreation of the Activity after the rotation. This solution was chosen for consistency with the other Activities of the application, but it is not ideal since the Android developers themselves suggest it only as a last resort\footnote{\url{https://developer.android.com/guide/topics/manifest/activity-element.html}}.
 	\end{itemize}
 \end{itemize}
 
