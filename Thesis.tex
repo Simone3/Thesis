@@ -2049,9 +2049,8 @@ REPORT: All 131 events were in order}
 \newpage
 \part{Conclusions and Future Work}\label{part_conclusion}
 
-\fxnote*{New}{
 \section{Conclusions}
-This thesis presented a possible \fix{possible? perhaps comprehensive, covering different development stages and tasks} testing approach that focuses on the events generated during the execution of an Android application. It analyzed first a subset of events, lifecycle transitions, and then focused on a more generic concept of events.\medskip \\
+This thesis presented a comprehensive testing approach that focuses on the events generated during the execution of an Android application, covering different development stages and tasks. It analyzed first a subset of events, lifecycle transitions, and then focused on a more generic concept of events.\medskip \\
 Section \ref{section_lifecycle_static} proposed a static analysis approach for lifecycle testing, focusing on the management of selected components according to the host Activity/Fragment lifecycle. This approach is mainly useful in the early stages of development to warn the developer of possible criticalities, concerning performance or correctness.\medskip \\
 In section \ref{section_lifecycle_dynamic}, instead, it is reported the description of a dynamic approach for lifecycle testing. The idea is to provide a more complete support for lifecycle testing, hiding to the developers the complexity of driving the transitions and so allowing them to just focus on actions and assertions defined in the test case. The relevance of thoroughly testing an Activity or a Fragment with regard to its lifecycle is an important step to ensure confidence of correctness of the component, since lifecycle handling can often generate many issues.\medskip \\
 Part \ref{part_events} proposed an event-based testing library. The idea is to first build an event stream, observing different Android events defined by the developer, and then to express consistency checks on it, using a temporal assertions language. This allows to check for a specific type of race conditions and to assess existence, ordering and quantification of the events generated during the application execution.\medskip \\
@@ -2076,12 +2075,12 @@ Possible future extensions on the proposed work include:
 	\begin{itemize}
 		\item Provide a better support for building the event stream, i.e. allow in some way to observe events that do not have an Android listener or to easily observe other events without the need to edit the production code (e.g. it may be possible to observe any callback invocation with aspect-oriented programming).
 		\item Increase the assertion language expressiveness, adding more checks and allowing to specify dependencies among sub-checks in check connectives.
-		\item Provide a better check results handling: for example, it may be possible to write a more complete report on the event monitor outcome, with cleaner interface (e.g. generating an HTML file) and more information to allow the developer to understand the problem more easily and to reproduce the behavior in other tests.
+		\item Allow, if possible, to specify the consistency checks in an easier and less verbose way.
+		\item Provide a better check results handling: for example, it may be possible to write a detailed report on the Event Monitor outcome, with cleaner interface (e.g. generating an HTML file) and more information to better understand and reproduce the behavior in other tests.
 		\item Evaluate the possibility of reordering the events in the stream (e.g. by automatically generating delays in the invocation of callbacks) to better test the consistency among events.
 		\item Provide automated assertion placement support, allowing the developer to start from relevant pre-generated temporal assertions.
 	\end{itemize}
 \end{itemize}
-}
 
 
 %..............................................................................%
@@ -2093,7 +2092,6 @@ Possible future extensions on the proposed work include:
 \addcontentsline{toc}{part}{Appendices}
 
 \fxnote*{New}{\section{Code Listings}}
-%\setcounter{lstlisting}{0}
 \lstset{
   numbers=left,
   frame=single
@@ -2128,9 +2126,6 @@ Possible future extensions on the proposed work include:
 %..............................................................................%
 
 \newpage
-
-\fix{You can merge all these bib files in one and reference just that one file}
-
 \bibliographystyle{unsrt}
 \bibliography{Bib/DEvA,Bib/CAFA,Bib/EventRacer,Bib/JUnit,Bib/Lint,Bib/Mockito,Bib/Oracles,Bib/ReactiveLocation,Bib/ReactiveNetwork,Bib/ReactiveSensors,Bib/Retrofit,Bib/Robolectric,Bib/RxAndroid,Bib/RxBinding,Bib/RxBroadcast,Bib/RxFileObserver,Bib/RxGoogleMaps,Bib/RxJava,Bib/RxLifecycle,Bib/RxPermissions,Bib/RxPreferences,Bib/RxWear,Bib/StorIO,Bib/THOR,Bib/CountingLogic,Bib/Hamcrest,Bib/Stats,Bib/InTheClear,Bib/TrackBuddy,Bib/WordPressApp,Bib/WordPressCMS,Bib/WordPress2015-12-06,Bib/WordPress2016-07-15,Bib/ERVA,Bib/SoftwareTestingAndAnalysis,Bib/Espresso,Bib/UIAutomator,Bib/monkeyrunner,Bib/UIExerciserMonkey,Bib/ProGuard,Bib/StaticLifecycleChecks,Bib/DynamicLifecycleTesting,Bib/EventBasedTesting,Bib/ReactiveX} 
 \addcontentsline{toc}{part}{References}
