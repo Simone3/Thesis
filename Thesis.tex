@@ -659,13 +659,10 @@ Finally, the \texttt{LifecycleIssuesRegistry} simply sends the \texttt{Issue} ob
 
 \subsection{Evaluation}
 
-\subsubsection{General Properties}
-\begin{itemize}
-	\item Applicability: the static lifecycle tests target a specific subset of Android applications, i.e. those that employ the components linked to each detector. Moreover, they are useful mostly in the early stages of development to recognize inconsistencies when the developer is coding an Activity or Fragment, since the issues would likely be detected at the first run or test case via crashes or logged errors.
-	\item Effectiveness: static analysis in general can produce false negatives or false positives, so there may be situations where the developer is notified of a non-relevant problem or a real issue is not detected. For example, if the developer decides to employ the checked components in a non-standard way (e.g. register a Broadcast Receiver in an Activity and unregister it in another, passing the reference between them) the tool would wrongly recognize it as a problem.
-	\item Usability: the static checks are completely integrated in the Lint tool available in the development IDE, so each of them behaves exactly as the built-in detectors. For this reason, the issues are both displayed as a visual clue on the code (the detected problem is highlighted and a warning message is shown) and they are included on the project-wide analysis run on demand by the developer.
-	\item Performance: the Lint tool is usually able to analyze an entire project in a few seconds, checking for all the listed issues. The code of the developed lifecycle checks does not present any criticality from the performance point of view, since it employs only a AST Traversal technique on a single Java class.
-\end{itemize}
+\subsubsection{Discussion}
+From the point of view of applicability, it can be said that the static lifecycle tests target only a specific subset of Android applications, i.e. those that employ the components linked to each Detector. Moreover, they are useful mostly in the early stages of development to recognize inconsistencies when the developer is coding an Activity or Fragment, since the issues would likely be detected at the first run or test case via crashes or logged errors.
+
+Concerning usability, it can be noted that the static checks are completely integrated in the Lint tool available in the development IDE, so each of them behaves exactly as the built-in detectors. For this reason, the issues are both displayed as a visual clue on the code (the detected problem is highlighted and a warning message is shown) and included in the project-wide analysis run on demand by the developer.
 
 \subsubsection{Real-World Application}
 Since the lifecycle static checks are effective mostly in the early stages of development, it is not an easy task to find significant real-world examples of applications that may benefit from them. However, searching for open-source applications on the GitHub platform, the following examples may be found:
@@ -673,6 +670,11 @@ Since the lifecycle static checks are effective mostly in the early stages of de
 	\item InTheClear~\cite{InTheClear} is an application for alerting during emergencies. Before commit \textit{cabfc26}\footnote{\url{https://github.com/SaferMobile/InTheClear/commit/cabfc2643bc5820e109433a8ae48f9f6a0788d9f}} a Broadcast Receiver was registered but never unregistered in the \texttt{SMSSender} class. Using the static lifecycle tests the developers would have detected the issue immediately, without the need to receive the log notification and open the issue \#56\footnote{\url{https://github.com/SaferMobile/InTheClear/issues/56}}.
 	\item TrackBuddy~\cite{TrackBuddy} is an SMS tracker application. Commit \textit{007b6f7}\footnote{\url{https://github.com/byteShaft/TrackBuddy/commit/007b6f7acb39e90d53ef38577d212927fae19d91}} solves a bug in \texttt{LocationService}, which was missing a GoogleApiClient disconnection, a problem that would have been detected by lifecycle checks.
 \end{itemize}
+
+In these examples the checker correctly recognizes the aforementioned issues as real problems, but it must be noted that static analysis in general can produce false negatives or false positives, reducing its effectiveness. This means that there may be situations where the developer is notified of a non-relevant problem or a real issue is not detected: for example, if the developer decides to employ the checked components in a non-standard way (e.g. register a Broadcast Receiver in an Activity and unregister it in another, passing the reference between them) the tool would wrongly recognize it as a problem.
+
+With regard to the analysis performance, it can be said that the Lint tool is usually able to analyze an entire project in less than one minute, checking for all the registered issues. As an example, the project-wide analysis of InTheClear (40 KLOC) took an average of 20 seconds to complete, while for TrackBuddy (60 KLOC) 40 seconds were necessary. The code of the developed lifecycle checks does not present any criticality from the performance point of view, since it employs only a AST Traversal technique on a single Java class, causing negligible time complexity degradation (the average duration of analysis with and without the custom Detectors were the same).
+
 
 \section{Dynamic Analysis}\label{section_lifecycle_dynamic}
 
@@ -783,15 +785,12 @@ Activity Test Rule tests are covered by the \texttt{ActivityRuleLifecycleTest} c
 
 \subsection{Evaluation}
 
-\subsubsection{General Properties}
-\begin{itemize}
-	\item Applicability: lifecycle tests have a wide applicability range, since the behavior of almost every Activity of an application is directly affected by its lifecycle. Moreover, the tests are available for Activity Test Rule unit/integration testing, Espresso UI testing and Robolectric unit testing, and so they can be applied in most of the testing environments employed in Android development.
-	\item Effectiveness: the tests correctly simulate the real behaviors of lifecycle transitions, allowing the developer to setup test cases that can effectively reveal criticalities.
-	\item Usability: to define the lifecycle test cases the developer only needs to inherit from the classes provided by the library and implement the abstract methods. In each of them, the complexity of handling the lifecycle transitions is completely hidden to the developer thanks to the callback mechanism, allowing to focus only on the actions and assertions to be performed during the test.
-	\item Performance: the overhead introduced by the lifecycle transitions handling is negligible, and so the time complexity of each test depends only on the actions and assertions defined by the developer.
-\end{itemize}
+\subsubsection{Discussion}
+Lifecycle tests have a wide applicability range, since the behavior of almost every Activity of an application is directly affected by its lifecycle. Moreover, the tests are available for Activity Test Rule unit/integration testing, Espresso UI testing and Robolectric unit testing, and so they can be applied in most of the testing environments employed in Android development.
 
-\subsubsection{Real-World Application} \fix{Do you provide listings of the generated tests? If not, could you please add short code snippets showing how your tests will look like for the three cases. And mention if developers have added any new test cases.}
+Concerning usability, to define the lifecycle test cases the developer only needs to inherit from the classes provided by the library and implement the abstract methods. In each of them, the complexity of handling the lifecycle transitions is completely hidden to the developer thanks to the callback mechanism, allowing to focus only on the actions and assertions to be performed during the test.
+
+\subsubsection{Real-World Application} \fix{And mention if developers have added any new test cases. (?)}
 To prove the lifecycle tests effectiveness, the library has been applied to WordPress~\cite{WordPressApp}, the Android application that allows to manage directly from mobile devices the websites created with the well-known content management system WordPress~\cite{WordPressCMS}.
 
 The evaluation has been performed by applying the same lifecycle tests first on an old version of the application (at commit \textit{9f9cb12}\footnote{\url{https://github.com/wordpress-mobile/WordPress-Android/commit/9f9cb12bb1d8a82d60897b5c3ff954c2f88de4f2}} on December 6, 2015)~\cite{WordPress2015-12-06} and then on the latest version at the time of writing (at commit \textit{bfdf611}\footnote{\url{https://github.com/wordpress-mobile/WordPress-Android/commit/bfdf611c6a37ddd1fad1980f73a00389b2e22677}} on July 15, 2016)~\cite{WordPress2016-07-15}. In the six months elapsed between the two versions some lifecycle issues were discovered and fixed, and so the idea is to show that the defined tests fail in the older version while they succeed in the newer one.
@@ -829,6 +828,9 @@ The defined tests are:
 		\item Causes and Solutions: the bug was caused by the missing \texttt{NotificationsSettingsActivity} rotation handling. To solve the issue, the developers decided to simply add \texttt{android:configChanges=\char`\"orientation|screenSize\char`\"} in the application manifest, to override the automatic recreation of the Activity after the rotation. This solution was chosen for consistency with the other Activities of the application, but it is not ideal since the Android developers themselves suggest it only as a last resort\footnote{\url{https://developer.android.com/guide/topics/manifest/activity-element.html}}.
 	\end{itemize}
 \end{itemize}
+The three bugs are all correctly reproducible with the dynamic lifecycle testing library, i.e. the tests fail in the old version of WordPress and complete successfully on the latest version.
+
+To conclude, from the performance point of view it may be noted that the overhead introduced by the lifecycle transitions handling is negligible. For example, running  the aforementioned \texttt{MyProfileActivityTest} as a standard Espresso test without any lifecycle transition took in average 1.2 seconds, while with the dynamic lifecycle testing library 1.4 seconds. The performance degradation is for the most part due to the overhead introduced by the Android lifecycle management, which is unavoidable if the developer wants to simulate real-world behaviors in the application.
 
 
 %..............................................................................%
@@ -2038,7 +2040,7 @@ Event-based testing is especially useful for applications that already use the R
 The library can be applied both as a testing support tool, expressing conditions during test cases built in Espresso, Robolectric or any other framework, or as a debugging tool directly in production code in the early stages of development, to observe how the event stream is built.
 
 \subsection{Effectiveness}
-To discuss the effectiveness of the event monitor tool we can focus on three aspects:
+A more specific analysis of applicability and effectiveness on a real-world application is explained in section \ref{event_eval_real}. However, in general, to discuss the effectiveness of the event monitor tool we can focus on three aspects:
 \begin{itemize}
 	\item Event Stream Composition: it may be noted that, thanks to the available listeners and RxAndroid extensions, many events can be easily observed in an Android application, like user interaction on most View components, sensor data, broadcasts, etc. However, there are many events that cannot easily be observed, mainly because Android does not provide any listener on which to build the ReactiveX Observable (e.g. no listener is available to see when a View element becomes visible or hidden) or because it only allows to manage a single listener (e.g. only one focus change listener is allowed per View component and, if the developer uses one inside the production code of the application, RxJava cannot use another to build the Observable). This of course can limit the event stream composition and, as a consequence, the checks that can be expressed on it.
 	\item Assertions Language Expressiveness: the proposed assertion language allows to express temporal constraints (events can happen only after/before/between other events), causality (events must happen after/before/between other events), existence, ordering and quantification among events, as well as correlating check results via logic connectives. This expressiveness gives the possibility to express the majority of temporal operators, but may be extended in future work to support more complex assertions, for example like the possibility of correlating the matched events between several checks.
@@ -2124,7 +2126,7 @@ The imported events include for example the text change events of title and cont
 
 Most of the events, however, are specific for the WordPress application, for example the HTML toggle event and the media upload progress event. As such, these events need to be created by the developers, together with the proper Hamcrest matchers, similarly to what can be seen in listing~\ref{lst_event_custom_event}. The generation effort of the event classes is very low, to define the custom events for the WordPress application less than a couple of minutes per class were required.
 
-Once the custom events are defined, they either need to be fired manually (i.e. modifying the production code of the application) using the \texttt{EventMonitor\#fireCustomEvent(Event)} method (in case of lack of valid listeners, like in the case of the HTML toggle event) or an Observable must be generated. An example of the latter case is the media upload progress events Observable, defined in listing~\ref{lst_event_custom_observable}. The generation effort of the Observables highly depends on the specific case (i.e. available listeners): in this case, to define the Observable for media upload progress events took approximately five minutes.
+Once the custom events are defined, they either need to be fired manually (i.e. modifying the production code of the application) using the \texttt{EventMonitor\#fireCustomEvent(Event)} method (in case of lack of valid listeners, like in the case of the HTML toggle event) or an Observable must be generated. An example of the latter case is the media upload progress events Observable, defined in listing~\ref{lst_event_custom_observable}. The generation effort of the Observables highly depends on the specific component (i.e. available listeners): in this case, to define the Observable for media upload progress events took approximately five minutes.
 
 \subsubsection{Checks}
 The defined checks, valid for all the tests, enforce the following conditions:
@@ -2160,6 +2162,7 @@ REPORT: The condition was never met between any of the 131 pairs}
 	\item \texttt{[SUCCESS] All events where each is media upload progress are in the order defined by the comparator: org.wordpress.android.ui.posts.EditPostActivityTest$1$1@a746538\\
 REPORT: All 131 events were in order}
 \end{itemize}
+The printed results first display the outcome of the check (as mentioned before, in this case all successes), then a sentence explaining the assertion meaning, and finally a report on what has been recorded. This latter part is not particularly useful for successful checks, but in case of failures it displays which events caused the issue to better identify the problem.
 
 
 %..............................................................................%
