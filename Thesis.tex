@@ -122,9 +122,7 @@
 %................................... INTRO ....................................%
 %..............................................................................%
 
-\part{Introduction} \fix{Presumably you need \texttt{chapter}s instead of \texttt{part}s. Parts aggregate chapters. While intro is short, so subsections can do.}
-
-\fix{By this time you can propose a title.}
+\part{Introduction}
 
 \section{Context}
 Mobile market is continuously expanding, in 2016 2 billion people world-wide own a smartphone and stores like Google Play and Apple's App Store host more than 2 million applications~\cite{stats}.
@@ -133,7 +131,7 @@ Due to this widespread, mobile applications require high quality standards and t
 
 Mobile testing, however, presents several challenges. The main problem is fragmentation: there are hundreds of different devices that may run an application, each with different hardware capabilities, screen sizes, available sensors and input methods, operating systems or versions of the same operating system. Other issues are for example network availability, internationalization, scripting (e.g. emulate touchscreen gestures during a test) and usability.
 
-This thesis focuses on two particular challenges of mobile development: \fix{challenges that have been largely overlooked to date}
+This thesis focuses on two particular challenges of mobile development that have been largely overlooked to date:
 \begin{itemize}
 	\item Events: mobile applications are characterized by a highly dynamic environment, where hundreds of events may be processed every minute, such as sensor data, connectivity changes, user input, network responses, etc. These events can happen in many different orders and frequencies, and, if the developer does not handle them correctly, this may lead to unexpected behaviors or crashes.
 	\item Lifecycle: application components are characterized by their lifecycle, i.e. by several working states such as running, paused, destroyed, etc. This mechanism needs to be carefully handled by the developer: for example an application should stop requesting sensor data while paused to avoid wasting resources or to commit unsaved data before it is closed.
@@ -142,7 +140,7 @@ This thesis focuses on two particular challenges of mobile development: \fix{cha
 \section{Objectives}
 Given the critical aspects of event concurrency and lifecycle handling, the aim of this thesis is to describe an event-based testing approach for Android applications. The Android operating system was chosen because of its widespread and openness, but the main concepts are valid also for other mobile environments.
 
-The focus of the first part of the thesis is on lifecycle changes events. In particular, the problem of lifecycle handling is addressed first with a static code analysis approach to recognize possible misuses of components, and then with a dynamic approach that allows the developer to drive the application lifecycle to test its robustness.
+The focus of the first part of the thesis is on lifecycle changes events. In particular, the problem of lifecycle handling is addressed first with a static code analysis approach to recognize possible misuses of components, and then with a dynamic technique that allows the developer to drive the application lifecycle to test its robustness.
 
 The second part of the thesis focuses instead on generic events, providing to the developer a tool to test their behavior in dynamic conditions. More in detail, a temporal logic language is defined to specify consistency checks on the stream of events, implemented in Android exploiting the ReactiveX library, an innovative system of industrial interest.
 
@@ -150,7 +148,8 @@ The second part of the thesis focuses instead on generic events, providing to th
 The original contributions of this thesis are:
 \begin{itemize}
 	\item A survey of the approaches to test Android applications, with particular regard to lifecycle handling and concurrency of events.
-	\item A collection of examples of best practices in handling components according to the application lifecycle and the implementation of static checks to help the developer recognize possible misuses. \fix{These can be separated as two complementary contributions.}
+	\item A collection of examples of best practices in handling components according to the application lifecycle.
+	\item Implementation of static checks to help the developer recognize possible misuses of components with regard to lifecycle.
 	\item Implementation of a testing framework that allows to verify the behavior of an application during common lifecycle changes.
 	\item Definition of a temporal logic language to describe consistency checks among events and its implementation in a testing tool.
 	\item Empirical evaluation of the proposed tools on real-world applications, to discuss their effectiveness.
@@ -161,7 +160,7 @@ The thesis is organized as follows:
 \begin{itemize}
 	\item Part \ref{part_background} provides background information on testing and Android in general, as a reference to the main concepts used in the document.
 	\item Part \ref{part_state_art} analyzes the main technologies available to test Android applications and some examples of research related to the objectives of the thesis.
-	\item Part \ref{part_lifecycle} focuses on the lifecycle events and in particular on the static and dynamic approaches to test them.
+	\item Part \ref{part_lifecycle} focuses on lifecycle events and especially on the static and dynamic approaches to test them.
 	\item Part \ref{part_events} explains in detail the concept of event-based testing proposed in the thesis.
 	\item Part \ref{part_conclusion} summarizes the main concepts highlighting applicability, limitations and possible improvements.
 \end{itemize}
@@ -175,12 +174,12 @@ The thesis is organized as follows:
 \part{Background}\label{part_background}
 
 \section{Introduction}
-This part introduces more in detail the main concepts that are used during the thesis. In particular, it starts with a short description of testing in general, with some terminology that is employed throughout the thesis. It then provides some information on Android and its development concepts, with particular attention to component lifecycle, which is the focus of the first half of the thesis. Finally, it describes general event-driven systems, introducing some of the issues that are addressed by the second half of the thesis.
+This part presents more in depth the main concepts that are used during the thesis. In particular, it starts with a short description of testing in general, with some terminology that is employed throughout the thesis. It then provides some information on Android and its development concepts, with particular attention to component lifecycle, which is the focus of the first half of the thesis. Finally, it describes general event-driven systems, introducing some of the issues that are addressed by the second half of the thesis.
 
 \section{Testing}
-Testing is the process used in software development to assess the validity of functional and non-functional requirements of an application. Although this verification is able to guarantee the correctness of the tested components within the specific conditions described by the test cases, testing cannot assess the validity of the whole application in every situation, because this would require an unfeasible amount of detail. For this reason, testing is mainly used to discover software bugs in particular situations and to reach an acceptable confidence that the program works as expected under the most common conditions. The topic of assessing the quality of a product, as well as issues like when to start or end the evaluation process, has been widely analyzed by research papers and books, such as Software Testing and Analysis~\cite{Young:2005:STA:1076948}.
+Testing is the process used in software development to assess the validity of functional and non-functional requirements of an application. Although this verification is able to guarantee the correctness of the tested components within the specific conditions described by the test cases, testing cannot assess the validity of the whole application in every situation, because this would require an unfeasible amount of detail. For this reason, testing is mainly used to discover software bugs in certain situations and to reach an acceptable confidence that the program works as expected under the most common conditions. The topic of assessing the quality of a product, as well as issues like when to start or end the evaluation process, has been widely analyzed by research papers and books, such as Software Testing and Analysis~\cite{Young:2005:STA:1076948}.
 
-Test cases require a mechanism to determine the test outcome, i.e. to tell if the application behaves as expected during the validation process. This mechanism, called oracle, should ideally be complete but avoiding over-specification, while also being efficiently checkable~\cite{Baresi:Oracles}. Oracles can assume many forms, for example the behavior of the application is compared with the technical specifications (e.g. documentation), it is automatically checked by the system thanks to some constructs that allow the developer to specify the test conditions or it can even be manually evaluated by a human being.
+Test cases require a mechanism to determine the test outcome, i.e. to tell if the application behaves as expected during the validation process. This mechanism, called oracle, should ideally be complete but avoiding over-specification, while also being efficiently checkable~\cite{Baresi:Oracles}. Oracles can assume many forms, for example the behavior of the application is compared with the technical specifications (e.g. documentation), it is automatically checked by the system thanks to some constructs that enables the developer to specify the test conditions or it can even be manually evaluated by a human being.
 
 This thesis mostly focuses on assertions as testing oracles. An assertion is a statement placed either at a specific point in a program or inside a test case that enables to check a condition. It is expected to be verified, but if a bug is present the assertion fails and the system throws an error. Assertions are test oracles that specify what the application does rather than how.
 
@@ -211,7 +210,7 @@ Android applications are developed in a Java language environment. The Android S
 \subsection{Application Components}
 Android applications are built by five main components, each with its specific purpose:
 \begin{itemize}
-	\item Activity: an Activity represents a single "action" that the user can take and, since almost all Activities interact with the user, they provide a screen with a user interface. Each Activity in the application is independent from the others, but it is of course possible to start an Activity (for example when the user clicks on a button) from another to build the application flow.
+	\item Activity: an Activity represents a single "action" that the user can take and, since almost all Activities interact with the user, they provide a screen with an interface. Each Activity in the application is independent from the others, but it is of course possible to start an Activity (for example when the user clicks on a button) from another to build the application flow.
 	\item Fragment: this component was introduced in Android 3.0 (API level 11) to support dynamic and flexible UI on large screens, for example on tablets. A Fragment  represents a "portion" of an Activity, with its own state and UI. Each Activity can contain multiple Fragments at a time, Fragments can be added/removed at runtime and each Fragment can be reused in more than one Activity. A Fragment can only be instantiated inside an Activity.
 	\item Service: a Service is a component that is executed in background and, as such, it provides no user interface. It is used to perform complex computations or to interact with an external API (e.g. via the network). The advantage of this approach is that another component (e.g. an Activity) can start and interact with a Service in order to avoid blocking its UI with computationally intensive operations.
 	\item Content Provider: a content provider allows to store and retrieve data from a persistent storage location, for example a local SQL database or a remote repository. The provided data can be shared among different applications or private to a specific one.
@@ -220,16 +219,16 @@ Android applications are built by five main components, each with its specific p
 Activities, Services and Broadcast Receivers are started asynchronously by messages called Intents. This allows not only an application to start its own components, but also to call on other applications. For example, a game may start its internal GameService to manage the game loop, but also send an Intent to a social network application to share the game progress.
 
 \subsection{Component Lifecycle}
-App components in Android such as Activities, Fragments and Services are characterized by their lifecycle, i.e. the current runtime state. In general each component is started and then destroyed, but some can also be paused and resumed, and go through several other states.
+App components in Android such as Activities, Fragments and Services are characterized by their lifecycle, i.e. the current runtime state. In general each component is started and then destroyed, but some can also be paused and resumed, and go through a number of other states.
 
-When a lifecycle state transition happens, the Android system allows the developers to implement several callbacks in the component implementation to manage their behavior in those situations. In particular, the Java classes that define a component (such as \texttt{Activity}), which are sub-classed by the developer, allow to override one or more methods to handle the callbacks (such as \texttt{onCreate()} or \texttt{onPause()}).
+When a lifecycle state transition happens, the Android system gives the opportunity to implement several callbacks in the component implementation to manage their behavior in those situations. In particular, the Java classes that define a component (such as \texttt{Activity}), which are subclassed by the developer, allow to override one or more methods to handle the callbacks (such as \texttt{onCreate()} or \texttt{onPause()}).
 
 \subsubsection{Activity Lifecycle}
 An Activity can be in three static states:
 \begin{itemize}
 	\item Resumed: the Activity is visible and can receive user input.
 	\item Paused: the Activity is \textit{partially} hidden by another visual component, for example a notification dialog, and has lost the focus. When the Activity is paused it cannot receive any user input or execute code.
-	\item Stopped: the Activity is completely hidden to the user, i.e. it is in the background. Like in the previous case, the activity cannot receive inputs or run code. In this state the Activity is still "alive": the state (e.g. member variables) is retained and the Activity can be later restarted.
+	\item Stopped: the Activity is completely hidden to the user, i.e. it is in the background. Like in the previous case, the Activity cannot receive inputs or run code. In this state the Activity is still "alive": the state (e.g. member variables) is retained and the Activity can be later restarted.
 \end{itemize}
 
 An Activity can also be in two transient states:
@@ -249,7 +248,7 @@ Figure \ref{fig:act_lifec} shows a simplified scheme, with the corresponding Jav
 \end{figure}
 
 \subsubsection{Fragment Lifecycle}
-The lifecycle of a Fragment is closely related to the lifecycle of the Activity that contains it: for example, when an Activity is paused, all the contained Fragments are paused too. In addition to this, however, Fragments can go through lifecycle changes independently of their host Activity: in particular, since Fragments can be dynamically added and removed at runtime, they can be created and destroyed while the Activity is running. Moreover, the developer also has the option to store removed fragments in the so-called backstack and be able to restore them later for example when the user presses the "back" button.
+The lifecycle of a Fragment is closely related to the lifecycle of the Activity that contains it: for example, when an Activity is paused, all the contained Fragments are paused too. In addition to this, however, Fragments can go through lifecycle changes independently of their host Activity: more in detail, since Fragments can be dynamically added and removed at runtime, they can be created and destroyed while the Activity is running. Moreover, the developer also has the option to store removed Fragments in the so-called backstack and be able to restore them later for example when the user presses the "back" button.
 
 Like Activities, Fragments are characterized by three static states:
 \begin{itemize}
@@ -263,7 +262,7 @@ Another characteristic of Fragments is that their instance can be retained, if t
 \begin{figure}
   \centering
   \includegraphics[width=180px]{Images/Android/fragment_lifecycle.png}
-  \caption[Fragment lifecycle]{Main fragment lifecycle callbacks. Source: \url{https://developer.android.com/guide/components/fragments.html\#Creating}}
+  \caption[Fragment lifecycle]{Main Fragment lifecycle callbacks. Source: \url{https://developer.android.com/guide/components/fragments.html\#Creating}}
   \label{fig:fra_lifec}
 \end{figure}
 
@@ -335,9 +334,9 @@ Event-Driven Architecture is a software pattern where the focus is on generation
 \subsection{Android as an Event-Driven Architecture}
 Android is implemented as an event-based system. This is because a mobile device must manage several events, like clicks on the touchscreen, sensor data, network requests/responses, etc.
 
-From an application point of view, events can be generated internally (e.g. from a service/thread created by the application itself) or externally (e.g. sensor data). Each application is composed of several threads, a subset of which, called Looper threads, are in charge of processing events by invoking an appropriate event Handler for each of them.
+From an application point of view, events can be generated internally (e.g. from a Service/thread created by the application itself) or externally (e.g. sensor data). Each application is composed of several threads, a subset of which, called Looper threads, are in charge of processing events by invoking an appropriate event Handler for each of them.
 
-Events from a single thread are atomic, i.e. they are placed in a FIFO event queue and processes one by one. However, events produced by several threads are processed concurrently and not guaranteed to be ordered or atomic. For example the user may click on a button while the application receives a network response and the device broadcasts some sensor data.
+Events from a single thread are atomic, i.e. they are placed in a FIFO event queue and processes one by one. However, events produced by different threads are processed concurrently and not guaranteed to be ordered or atomic. For example the user may click on a button while the application receives a network response and the device broadcasts some sensor data.
 
 \begin{figure}
   \centering
@@ -348,7 +347,7 @@ Events from a single thread are atomic, i.e. they are placed in a FIFO event que
 
 Examples of events that can be observed in an Android application are:
 \begin{itemize}
-	\item User input events can be observed attaching listeners to View components. An event listener is a Java interface whose methods are called by the Android framework when the View is triggered by user interaction, for example the \texttt{onClick()} callback of a listener attached to a Button will be called when the user clicks on that button. The developer can then implement the callback to perform any action in response to the input event generation, e.g. starting another activity.
+	\item User input events can be observed attaching listeners to View components. An event listener is a Java interface whose methods are called by the Android framework when the View is triggered by user interaction, for example the \texttt{onClick()} callback of a listener attached to a Button will be called when the user clicks on that button. The developer can then implement the callback to perform any action in response to the input event generation, e.g. starting another Activity.
 	\item Lifecycle events are triggered when there is a state transition of some component, like an Activity. For example the \texttt{onPause()} callback is invoked when an Activity is paused.
 	\item Broadcast events like system messages (e.g. device boot completed, alarm goes off, etc.) or application-specific messages are received by Broadcast Receivers in the \texttt{onReceive()} callback.
 	\item Asynchronous messages from services external to the application (e.g. sensor data, network requests, etc.) also have their specific callbacks.
@@ -359,7 +358,7 @@ The concurrency among events inside a single application can lead to unexpected 
 
 When the Android developer decides to explicitly create a multi-threaded application we may have the classical problems of concurrency like synchronization, deadlocks and starvation, but problems arise even if he/she does not manually create threads, due to the aforementioned concurrency of events.
 
-In this context, the most relevant challenge in an Android application is race conditions: two or more events do not happen in the order the programmer intended. As an example, reported in listing~\ref{lst_event_race_first}, a race condition may happen when the developer starts an AsyncTask (an utility class that allows to perform short operations in the background without blocking the UI thread) to asynchronously perform some operation. If the user, for example, rotates the device while the AsyncTask is running, the application crashes with an \texttt{IllegalStateException} because the reference to the old view is lost.
+In this context, the most relevant challenge in an Android application is race conditions: two or more events do not happen in the order the programmer intended. As an example, reported in listing~\ref{lst_event_race_first}, a race condition may happen when the developer starts an AsyncTask (an utility class that allows to perform short operations in the background without blocking the UI thread) to asynchronously perform some operation. If the user, for example, rotates the device while the AsyncTask is running, the application crashes with an \texttt{IllegalStateException} because the reference to the old View is lost.
 
 
 %..............................................................................%
@@ -370,7 +369,9 @@ In this context, the most relevant challenge in an Android application is race c
 \newpage
 \part{Android Testing State of the Art}\label{part_state_art}
 
-Android test cases adhere to the JUnit~\cite{JUnit} format, a testing framework for Java. It allows to create classes called test cases that contain methods annotated with \texttt{@Test}, each representing a test.
+Android test cases adhere to the JUnit~\cite{JUnit} format, a testing framework for Java. It gives the possibility to create classes called test cases that contain methods annotated with \texttt{@Test}, each representing a test.
+
+In addition to the JUnit environment to run the tests, in Android testing JUnit-like assertions are usually employed. These assertions allow to specify a condition on one or more Java objects and throw an \texttt{AssertionError} exception if the check fails. For example, the method \texttt{assertEquals(String message, Object expected, Object actual)} checks that the two given objects are equal and, if not, throws an error with the given message.
 
 \section{Unit Testing}
 White-box unit testing in Android can be:
@@ -390,14 +391,14 @@ Android also provides a way to test User Interface (UI) to see if it behaves as 
 
 We may have:
 \begin{itemize}
-	\item UI testing on a single app: the Espresso~\cite{Espresso} library provides APIs for writing UI tests to simulate user interactions. In general, defining a test case means building a series of \texttt{onView(Matcher).perform(ViewAction).check(ViewAssertion)} instructions, i.e. select a particular View that matches a description (e.g. a button with "Start" text), perform one or more actions on it (e.g. click) and check if some conditions are true (e.g. if after the click the button text changes). The main advantages of Espresso are that the test cases are easily readable and understood, and that it has automatic synchronization (before performing an action it waits for the previous ones to be completed, i.e. for the main thread to be idle).
+	\item UI testing on a single app: the Espresso~\cite{Espresso} library offers APIs for writing UI tests to simulate user interactions. In general, defining a test case means building a series of \texttt{onView(Matcher).perform(ViewAction).check(ViewAssertion)} instructions, i.e. select a View that matches a description (e.g. a button with "Start" text), perform one or more actions on it (e.g. click) and check if some conditions are true (e.g. if after the click the button text changes). The main advantages of Espresso are that the test cases are easily readable and understood, and that it has automatic synchronization (before performing an action it waits for the previous ones to be completed, i.e. for the main thread to be idle).
 	\item UI testing on multiple apps: the UI Automator~\cite{UIAutomator} library allows to test if the developed application interacts correctly with the system or other apps (e.g. the application may request an image, the Camera app is opened, the picture is taken and then the control goes back to the original application). 
 \end{itemize}
 
 \section{Runner Tools}
 In addition to the testing frameworks described in the previous sections, Android also offers some tools to run and test an application without accessing the source code (black-box testing):
 \begin{itemize}
-	\item UI Exerciser Monkey~\cite{UIExerciserMonkey}: allows to run an application on a physical device or emulator generating a repeatable pseudo-random stream of user events (e.g. clicks) and system-level events (e.g. start call). The developer can set several options like target package, probability of certain events, etc.
+	\item UI Exerciser Monkey~\cite{UIExerciserMonkey}: gives the possibility to run an application on a physical device or emulator generating a repeatable pseudo-random stream of user events (e.g. clicks) and system-level events (e.g. start call). The developer can set several options like target package, probability of certain events, etc.
 	\item monkeyrunner~\cite{monkeyrunner}: controls a device or emulator from a workstation by sending specific commands and events defined as a Python program. It also allows to take screenshots during the test execution and store them on the workstation.
 \end{itemize}
 
@@ -407,15 +408,15 @@ Due to the importance of lifecycle handling, some approaches to test application
 \subsection{Testing Frameworks Support}
 The built-in instrumented testing framework allows to drive an Activity lifecycle via the methods \texttt{callActivityOnStart()}, \texttt{callActivityOnPause()}, etc. provided by the \texttt{Instrumentation} class. These methods, however, are complex to use because the developer needs to chain the correct methods in each test case to simulate a valid lifecycle transition (e.g. for example to simulate the Activity being closed the developer needs to call in order pause, stop and destroy) and, since they are required to run on the main thread of the application, often need to be executed inside a \texttt{Runnable} that may require explicit synchronization with the testing thread.
 
-The Robolectric framework makes things a little easier allowing the developer to specify a chain of transitions like \texttt{buildActivity(MyActivity.class).create().start().resume()}, avoiding \texttt{Runnable} and synchronization problems. This approach, however, suffers the same problem of the instrumented framework: it requires explicit calls to the correct chain of transitions to simulate realistic behaviors, and so coded by the developers only in very specific situations.
+The Robolectric framework makes things a little easier allowing the developer to specify a chain of transitions like \texttt{buildActivity(MyActivity.class).create().start().resume()}, avoiding \texttt{Runnable} and synchronization problems. This technique, however, suffers the same problem of the instrumented framework: it requires explicit calls to the correct chain of transitions to simulate realistic behaviors, and so coded by the developers only in very specific situations.
 
 \subsection{THOR}
 One example of tool designed with particular regard to lifecycle handling is THOR~\cite{Adamsen:2015:SEA:2771783.2771786}. The idea of the tool is to run pre-existing UI test cases (defined in Robotium or Espresso) in adverse conditions to test the application robustness. These adverse conditions are not, however, unusual events, but common expected behaviors of the application: in particular, THOR injects in the tests several neutral system events, i.e. events that are not expected to change the outcome of the test. These neutral events are mainly related to Activity lifecycle: for example Pause $\rightarrow$ Resume; Pause $\rightarrow$ Stop $\rightarrow$ Restart; Audio
 focus loss $\rightarrow$ Audio focus gain. Neutral events injected in an application that does not manage the lifecycle correctly can lead to the discovery of bugs, which are not necessarily crashes but also unexpected behaviors for the specific application.
 
-The tool provides several features like:
+The tool provides features like:
 \begin{itemize}
-	\item Neutral events are injected in suitable locations to avoid conflicts with the test case: in particular they are triggered when the event queue becomes empty and the execution of the remaining test is delayed.
+	\item Neutral events are injected in suitable locations to avoid conflicts with the test case: they are triggered when the event queue becomes empty and the execution of the remaining test is delayed.
 	\item Multiple errors for each test: if a test fails after some neutral event injections, the test is rerun but injections are only performed after the previous failure point to maximize error detection.
 	\item Faults Localization: if a test fails, the tool tries to identify the exact causes (i.e. the neutral events responsible for the unexpected behavior) using a variant of delta debugging (scientific approach of hypothesis-trial-result loop), then displays this information to the user to allow further investigation.
 	\item Faults Classification: the errors that make the test cases fail are classified by importance and criticality.
@@ -440,7 +441,7 @@ Android EventRacer~\cite{Bielik:2015:SRD:2858965.2814303} is an improvement of C
 \end{itemize}
 Moreover, EventRacer analyzes an application in much less time than CAFA: building the Happens-Before relationship graph has $\mathcal{O}(n^2)$ time complexity instead of $\mathcal{O}(n^3)$. The tool is also publicly available as an online tester or an offline application (only available for Linux systems). One disadvantage of the EventRacer approach is that the implementation requires to modify the Android framework in order to access low-level information and, for this reason, it is only available for Android 4.4, which limits the options of the developer for testing other versions of the OS. Another critical aspect of the tool is that detection is performed by running the application in an emulator feeding it with pseudo-random events: this approach may skip several sections of an application, especially if they are not immediately available (e.g. they require user sign-in).
 
-\fxnote*{New}{\subsection{ERVA}}
+\subsection{ERVA}
 The tool ERVA~\cite{Hu:2016:AVR:2931037.2931069} is a further step forward in event race detection. The authors note that the previous tools have several drawbacks like:
 \begin{itemize}
 	\item They are prone to false positives, due to:
@@ -462,16 +463,16 @@ ERVA addresses these issues by splitting the analysis in two phases:
 \end{itemize}
 
 \subsection{DEvA}
-A completely different approach for race detection is provided by DEvA~\cite{Safi:2015:DEA:2786805.2786836}. The idea of the tool is to base its search on static code analysis rather than dynamic analysis: this approach guarantees more code coverage and completeness. DEvA focuses on a specific type of problem called Event Anomalies: processing of two or more events results in accesses to the same memory location and at least one of those is a write access (note that the use-free races analyzed by CAFA are a subclass of this type of issue). The idea of the tool is to identify variables that may be modified as a result of receiving an event (i.e. a potential Event Anomaly) using the Control Flow Graph of the application (i.e. all paths that may be traversed in the application during its execution). The tool receives as input from the developer:
+A completely different approach for race detection is provided by DEvA~\cite{Safi:2015:DEA:2786805.2786836}. The idea of the tool is to base its search on static code analysis rather than dynamic analysis: this technique guarantees more code coverage and completeness. DEvA focuses on a specific type of problem called Event Anomalies: processing of two or more events results in accesses to the same memory location and at least one of those is a write access (note that the use-free races analyzed by CAFA are a subclass of this type of issue). The idea of the tool is to identify variables that may be modified as a result of receiving an event (i.e. a potential Event Anomaly) using the Control Flow Graph of the application (i.e. all paths that may be traversed in the application during its execution). The tool receives as input from the developer:
 \begin{itemize}
 	\item The list of all methods used as event handlers (callbacks that use the events).
 	\item The base class used to implement events in the system.
 	\item The set of methods used as consumed event revealing statements (i.e. methods that retrieve information stored in an event without modifying the event's attributes), used to tell apart events when a general parameter is passed to a callback.
 \end{itemize}
-DEvA allows a very fast analysis (usually 1 or 2 minutes) and guarantees complete code coverage, but static analysis may report false positives or be unable to detect some anomalies.
+DEvA performs a very fast analysis (usually 1 or 2 minutes) and guarantees complete code coverage, but static analysis may report false positives or be unable to detect some anomalies.
 
-                                                                                                                                 
-\fix{You can conclude the section with a couple of sentences stating that present work addresses the limitations of the state of the art and introduces new X, Y, Z for A, B, C }
+\section{Addressed Limitations}
+The work presented in this thesis address some of the limitations of the testing frameworks and tools just presented. In particular, it provides a better support for lifecycle testing from both a static and a dynamic point of view, and a comprehensive approach to test events in Android applications, focusing not only on race conditions but also on ordering, existence and causality.
 
 %..............................................................................%
 %.................................. LIFECYCLE .................................%
@@ -483,26 +484,26 @@ DEvA allows a very fast analysis (usually 1 or 2 minutes) and guarantees complet
 \section{Introduction}
 Correctly handling a component lifecycle is a key aspect of Android application development, to avoid waste of resources, crashes and unexpected behaviors.
 
-However, the available means to thoroughly test an Activity lifecycle are lacking. The Android testing frameworks provide low-level methods to drive the lifecycle but they need to be carefully chained to simulate realistic behaviors, and existing testing tools like THOR, while effective, present some limitations such as usability issues.
+However, the available means to thoroughly test an Activity lifecycle are lacking. The Android testing frameworks supply low-level methods to drive the lifecycle but they need to be carefully chained to simulate realistic behaviors, and existing testing tools like THOR, while effective, present some limitations such as usability issues.
 
 Given this context, the solution proposed by the first part of this thesis provides a more complete support to test a component lifecycle. In particular, two approaches for lifecycle testing are proposed: static analysis and dynamic analysis. The former analyzes the source code of the application to detect possible issues related to the handling of some components in accordance to the host Activity/Fragment lifecycle, for example failing to release a resource that was previously acquired. The dynamic approach, instead, provides to the developer a testing framework to easily drive the lifecycle, with pre-generated test cases for the most common transitions.
 
-The following sections present first the static approach and then the dynamic testing framework.
+The following sections present first the static technique and then the dynamic testing framework.
 
 \section{Static Analysis}\label{section_lifecycle_static}
 
 \subsection{Introduction}
-This section presents static lifecycle checks more in detail. First a short introduction of the main concepts of static program analysis is presented, then a detailed explanation of its application in lifecycle testing.
+This section presents static lifecycle checks in depth. First a short introduction of the main concepts of static program analysis is presented, then a detailed explanation of its application in lifecycle testing.
 
 \subsection{Static Program Analysis}
-As opposed to dynamic analysis that requires to actually run an application, static analysis only inspects the source code. Static program analysis is mainly employed to highlight possible coding errors (e.g. access a variable that is always null), to formally prove properties (e.g. pre- and post-conditions of a function) and to assess if the software follows a set of coding guidelines (e.g. variable naming conventions). There are several different analysis techniques, here we focus on those that employ the Abstract Syntax Tree and the Control Flow Graph of the problem.
+As opposed to dynamic analysis that requires to run an application, static analysis only inspects the source code. Static program analysis is mainly employed to highlight possible coding errors (e.g. access a variable that is always null), to formally prove properties (e.g. pre- and post-conditions of a function) and to assess if the software follows a set of coding guidelines (e.g. variable naming conventions). There are several different analysis techniques, here we focus on those that employ the Abstract Syntax Tree and the Control Flow Graph of the problem.
 
-An Abstract Syntax Tree (AST) is a tree representation of the code structure, where each node represents a program construct (e.g. a variable or an instruction). AST Traversal is the static analysis technique that explores the Abstract Syntax Tree to detect possible structural and syntactical problems, such as coding conventions conformity.
+An Abstract Syntax Tree (AST) is a tree representation of the code structure, where each node represents a program construct (e.g. a variable or an instruction). AST Traversal is the static analysis technique that explores the Abstract Syntax Tree to detect likely structural and syntactical problems, such as coding conventions conformity.
 
 A Control Flow Graph (CFG) instead represents the sequence of operations executed along all paths that may be traversed during the execution of the program. Control Flow Analysis employs the CFG to detect possible issues related to the program flow, e.g. accessing a variable that may not have been initialized in all previous paths. Data Flow Analysis is a similar technique that gathers information about the possible set of values in several points of the CFG.
 
 \subsection{Static Lifecycle Checks}
-This part of the thesis focuses on possible lifecycle checks using a static analysis approach. The idea is to consider some components used in the applications that require special attention, either because of their own lifecycle or because they need to be carefully used in accordance to the host component lifecycle.
+This part of the thesis focuses on lifecycle checks using a static analysis approach. The idea is to consider some components used in the applications that require special attention, either because of their own lifecycle or because they need to be carefully used in accordance to the host component lifecycle.
 
 Failing to correctly handle an Activity/Fragment lifecycle may lead to unexpected behaviors or resource waste. An unexpected behavior can be for example the loss of user data: if the developer does not react correctly to an Activity being destroyed in a note-taking app the currently written text may be lost. An example of resource waste can be requesting GPS location updates at constant intervals in an application that uses maps and failing to cancel them when the application is paused/stopped: the system will continue querying the device sensors even if the user is not currently looking at the map.
 
@@ -517,7 +518,7 @@ Each component is analyzed in terms of:
 	\item Best Practices: in which states of the host Activity/Fragment lifecycle is recommended/usual to acquire and release the component? If there are best practices, the analysis can check if the calls follow them.
 	\item Double Instantiation: can acquiring the same component more than once cause unexpected behaviors or waste computational power? If so, the static analysis can check if the resource may be acquired multiple times during the execution.
 \end{itemize}
-These three aspects were chosen because of their relevance in Android applications and because they are particularly suitable for static analysis, being usually characterized by regular and often strict usage patterns.
+These three aspects were chosen because of their relevance in Android applications and because they are especially suitable for static analysis, being usually characterized by regular and often strict usage patterns.
 
 Among the many components that can be used in Android applications, some were chosen and listed below as examples of targets for static lifecycle analysis. These components were selected for their standardization with regard to initialization and destruction: in most situations, the pattern for acquiring and releasing the linked resource is regular, and static analysis can easily assess the conformity with best practices.
 
@@ -535,7 +536,7 @@ The selected components for static lifecycle analysis are:
 		\item Best Practices: the official recommendation is to connect during \texttt{onStart()} and to disconnect during \texttt{onStop()}\footnote{\url{https://developers.google.com/android/guides/api-client\#start_a_manually_managed_connection}}.
 		\item Double Instantiation: it is not a problem since the call to \texttt{connect()} returns immediately if the client is already connected or connecting\footnote{\url{https://developers.google.com/android/reference/com/google/android/gms/common/api/GoogleApiClient\#public-methods}}.
 	\end{itemize}
-	\item Fused Location Provider API: the \texttt{FusedLocationProviderApi} class allows to query information about the current location. In particular, we are interested in the functionality that allows to receive periodic updates.
+	\item Fused Location Provider API: the \texttt{FusedLocationProviderApi} class enables to query information about the current location. In particular, we are interested in the functionality that allows to receive periodic updates.
 	\begin{itemize}
 		\item Release: the location updates should be removed by calling the \texttt{removeLocationUpdates()} method.
 		\item Best Practices: the official documentation encourages the developer to think whether it may be useful to stop the location updates when the Activity is no longer in focus, to reduce power consumption while the app is in background\footnote{\url{https://developer.android.com/training/location/receive-location-updates.html\#stop-updates}}.
@@ -551,7 +552,7 @@ The selected components for static lifecycle analysis are:
 			\end{itemize}
 			\item \texttt{camera2} package: this is the new API introduced in Android Lollipop to manage the device camera
 			\begin{itemize}
-				\item Release: although the documentation does not clearly state that the developer \textit{must} release the components, the objects used to manage the camera such as \texttt{ImageReader}\footnote{\url{https://developer.android.com/reference/android/media/ImageReader.html\#close()}}, \texttt{CameraDevice}\footnote{\url{https://developer.android.com/reference/android/hardware/camera2/CameraDevice.html\#close()}}, \texttt{CameraCaptureSession}\footnote{\url{https://developer.android.com/reference/android/hardware/camera2/CameraCaptureSession.html\#close()}}, etc. all provide a \texttt{close()} method to release the resource. In the sample application provided by Google\footnote{\url{https://github.com/googlesamples/android-Camera2Basic/blob/master/Application/src/main/java/com/example/android/camera2basic/Camera2BasicFragment.java}} these methods are all called during \texttt{onPause()} and a \texttt{Semaphore} is used "to prevent the app from exiting before closing the camera", so it is safe to assume that releasing these resources is required.
+				\item Release: although the documentation does not clearly state that the developer \textit{must} release the components, the objects used to manage the camera such as \texttt{ImageReader}\footnote{\url{https://developer.android.com/reference/android/media/ImageReader.html\#close()}}, \texttt{CameraDevice}\footnote{\url{https://developer.android.com/reference/android/hardware/camera2/CameraDevice.html\#close()}}, \texttt{CameraCaptureSession}\footnote{\url{https://developer.android.com/reference/android/hardware/camera2/CameraCaptureSession.html\#close()}}, etc. all provide a \texttt{close()} method to release the resource. In the sample application by Google\footnote{\url{https://github.com/googlesamples/android-Camera2Basic/blob/master/Application/src/main/java/com/example/android/camera2basic/Camera2BasicFragment.java}} these methods are all called during \texttt{onPause()} and a \texttt{Semaphore} is used "to prevent the app from exiting before closing the camera", so it is safe to assume that releasing these resources is required.
 				\item Double Instantiation: methods to acquire the components like \texttt{setRepeatingRequest()}\footnote{\url{https://developer.android.com/reference/android/hardware/camera2/CameraCaptureSession.html\#setRepeatingRequest(android.hardware.camera2.CaptureRequest, android.hardware.camera2.CameraCaptureSession.CaptureCallback, android.os.Handler)}}, \texttt{createCaptureSession()}\footnote{\url{https://developer.android.com/reference/android/hardware/camera2/CameraDevice.html\#createCaptureSession(java.util.List<Candroid.view.Surface>, android.hardware.camera2.CameraCaptureSession.StateCallback, android.os.Handler)}}, etc. replace the previous calls. For this reason, there's no need to check double instantiation for correctness, but since the time complexity of most of these calls is significant (e.g. \texttt{createCaptureSession()} "can take several hundred milliseconds") it can be checked for performance reasons.
 			\end{itemize}
 		\end{itemize}
@@ -598,7 +599,7 @@ Android Lint provides more than 100 built-in checks. Some examples:
 	\item UselessParent (performance issue): a layout file contains a View component that is of no use and can be removed for a more efficient layout hierarchy.
 	\item ButtonOrder (usability issue): makes sure that "cancel" buttons are placed on the left of the UI component, to follow the Android Design Guidelines.
 	\item ContentDescription (accessibility issues): checks that important visual elements like image-buttons have a textual description to allow the system accessibility tools to describe their purpose.
-	\item HardcodedText (internationalization issue): makes sure that text strings displayed to the user are placed on the appropriate XML files to allow translation and not hard-coded in Java.
+	\item HardcodedText (internationalization issue): makes sure that text strings displayed to the user are placed on the appropriate XML files and not hard-coded in Java, making translations feasible.
 \end{itemize}
 
 \subsubsection{Custom Android Lint Checks}
@@ -608,13 +609,13 @@ The open source Android Lint API allows to build custom rules for the static ana
 
 Implementing a custom Lint rule means building four components:
 \begin{itemize}
-	\item Issue: a problem detected by the rule, characterized by properties like ID, explanation, category, priority, etc. For example the "MissingPermission" issue has "9/10" priority, "Error" severity, "Correctness" category and an explanation describing the problem to the developer.
-	\item Detector: a detector is in charge of identifying one or more issues (if more than one, they are independent but logically related). For example the built-in \texttt{ButtonDetector} identifies the "Order" (cancel button on the left), "Style" (button borders), "Back" (avoid custom back buttons) and "Case" (capitalization of "OK" and "Cancel" labels on buttons) issues.
-	\item Implementation: links an issue to a detector and specifies the rule scope.
-	\item Registry: it is simply in charge of registering the issues to allow the Lint tool to identify the custom rules.
+	\item Issue: a problem detected by the rule, characterized by properties like ID, explanation, category, priority, etc. For example the "MissingPermission" Issue has "9/10" priority, "Error" severity, "Correctness" category and an explanation describing the problem to the developer.
+	\item Detector: a Detector is in charge of identifying one or more Issues (if more than one, they are independent but logically related). For example the built-in \texttt{ButtonDetector} identifies the "Order" (cancel button on the left), "Style" (button borders), "Back" (avoid custom back buttons) and "Case" (capitalization of "OK" and "Cancel" labels on buttons) Issues.
+	\item Implementation: links an Issue to a Detector and specifies the rule scope.
+	\item Registry: it is simply in charge of registering the Issues to allow the Lint tool to identify the custom rules.
 \end{itemize}
 
-More in detail, a custom detector extends the \texttt{Detector} class and implements one (or more in special cases) of these interfaces:
+More in detail, a custom Detector extends the \texttt{Detector} class and implements one (or more in special cases) of these interfaces:
 \begin{itemize}
 	\item \texttt{XmlScanner} if it needs to analyze XML files (such as the application manifest or layout descriptions).
 	\item \texttt{JavaScanner} if it needs to analyze Java files (source code for classes).
@@ -623,22 +624,22 @@ More in detail, a custom detector extends the \texttt{Detector} class and implem
 
 The extended class and the interfaces provide some utility methods that can be overridden by the developer to filter applicable files (e.g. name contains a given substring), nodes (e.g. only variable declarations), elements (e.g. an XML scanner only wants to read \texttt{TextView} elements), etc. to focus the rule attention only on particular situations and improve performance.
 
-In particular, a detector that implements \texttt{JavaScanner} is able to visit the Java files via an Abstract Syntax Tree, represented with the \texttt{lombok.ast} API. The developer has two options:
+In particular, a Detector that implements \texttt{JavaScanner} is able to visit the Java files via an Abstract Syntax Tree, represented with the \texttt{lombok.ast} API. The developer has two options:
 \begin{itemize}
-	\item Use the \texttt{Detector} callback methods to visit the nodes using the default AST Visitor. First of all, if the detector is interested only in specific types of nodes in the AST (as it is usually the case) the developer should override the \texttt{getApplicableNodeTypes()} method and return a list of types (e.g. \texttt{ClassDeclatation}, \texttt{MethodInvocation}, etc.). The class also provides several other methods to focus the search, like \texttt{getApplicableMethods()} (return list of method names), \texttt{applicableSuperClasses()} (return list of super-classes names), etc. Once this is done, the developer can override the detector methods like \texttt{visitMethod()} to receive all matching method invocations found in the tree, \texttt{checkClass()} to receive the matching class declarations, etc. to implement the rule logic.
+	\item Use the \texttt{Detector} callback methods to visit the nodes using the default AST Visitor. First of all, if the Detector is interested only in specific types of nodes in the AST (as it is usually the case) the developer should override the \texttt{getApplicableNodeTypes()} method and return a list of types (e.g. \texttt{ClassDeclatation}, \texttt{MethodInvocation}, etc.). The class also provides several other methods to focus the search, like \texttt{getApplicableMethods()} (return list of method names), \texttt{applicableSuperClasses()} (return list of super-classes names), etc. Once this is done, the developer can override the Detector methods like \texttt{visitMethod()} to receive all matching method invocations found in the tree, \texttt{checkClass()} to receive the matching class declarations, etc. to implement the rule logic.
 	\item Return in \texttt{createJavaVisitor()} method a custom implementation of the AST Visitor (subclass of \texttt{AstVisitor}) that implements the rule logic. Inside the AST Visitor the developer can override one or more methods that allow to visit every type of node in the tree such as \texttt{visitMethodDeclaration()}, \texttt{visitVariableDeclaration()}, \texttt{visitAnnotation()}, \texttt{visitWhile()}, etc. 
 \end{itemize}
-If a problem is found during one of the callbacks, the detector can call the \texttt{report()} method to pass the issue, the location (i.e. file and line) and a message in order to show the warning to the developer.
+If a problem is found during one of the callbacks, the Detector can call the \texttt{report()} method to pass the Issue, the location (i.e. file and line) and a message in order to show the warning to the developer.
 
-Note that some detectors can just visit the nodes and immediately recognize and report an error (e.g. if an attribute of a given component is not set), but others may require to do more expensive computation (even across multiple files). If this is the case, the developer can use the detector's \texttt{afterProject()} hook that is called when the whole project has been analyzed. In order to decide if a problem is present or not, the developer needs to save the state of the computation: variables like boolean flags can be easily stored in the detector object, but the problem is with code locations. Computing the location of an issue is an expensive operation and, especially if the probability of error is very low, we may have performance issues (e.g. a detector that finds unused resources cannot store the location of each of them before finding out that they are actually used somewhere). To solve this issue the developer can store location handles (lightweight representations of locations that can later be fully resolved if the problem is actually present) or request a second pass to the Lint tool (i.e. in the first project analysis one only sets some flags to detect problems, then if that is the case the project is scanned again to gather the actual locations of the issues).
+Note that some Detectors can just visit the nodes and immediately recognize and report an error (e.g. if an attribute of a given component is not set), but others may require to do more expensive computation (even across multiple files). If this is the case, the developer can use the Detector's \texttt{afterProject()} hook that is called when the whole project has been analyzed. In order to decide if a problem is present or not, the developer needs to save the state of the computation: variables like boolean flags can be easily stored in the Detector object, but the problem is with code locations. Computing the location of an Issue is an expensive operation and, especially if the probability of error is very low, we may have performance issues (e.g. a Detector that finds unused resources cannot store the location of each of them before finding out that they are actually used somewhere). To solve this problem the developer can store location handles (lightweight representations of locations that can later be fully resolved if the problem is actually present) or request a second pass to the Lint tool (i.e. in the first project analysis one only sets some flags to detect problems, then if that is the case the project is scanned again to gather the actual locations of the Issues).
 
 The Android Lint tool also provides the means to perform Control Flow Analysis during the detection process. In particular, the \texttt{ControlFlowGraph} class allows to build a low-level Control Flow Graph containing the \textit{insns} nodes of a method, i.e. the RTL (Register Transfer Language) representation of the code where each \textit{insns} node is a bytecode instruction (e.g. jump). This Control Flow Graph can be useful for example to analyze if some component is always released, e.g. the built-in \texttt{WakelockDetector} uses it to see if, when the Wake-Lock (a lock to keep the device awake) is acquired in a method, it is released afterwards in every possible path.
 
-Issues are usually defined as public, final and static fields inside their detector class. They are simply objects of the \texttt{Issue} class that are instantiated calling \texttt{Issue.create()} with some parameters like ID, category, severity, etc.
+Issues are usually defined as public, final and static fields inside their Detector class. They are simply objects of the \texttt{Issue} class that are instantiated calling \texttt{Issue.create()} with some parameters like ID, category, severity, etc.
 
-Implementations are objects of the \texttt{Implementation} class, whose constructor requires the detector class and the scope (e.g. \texttt{Scope.JAVA\_FILE\_SCOPE}). The implementation is passed as the last parameter of the \texttt{Issue.create()} method to link the issue with the detector.
+Implementations are objects of the \texttt{Implementation} class, whose constructor requires the Detector class and the scope (e.g. \texttt{Scope.JAVA\_FILE\_SCOPE}). The Implementation is passed as the last parameter of the \texttt{Issue.create()} method to link the Issue with the Detector.
 
-Finally, registers are sub-classes of \texttt{IssueRegistry} that usually only override the \texttt{getIssues()} method to return the list of custom issues. The registry must be referenced in the \texttt{build.gradle} file (in Android Studio) or in a manifest file (in Eclipse) to allow Lint to find it.
+Finally, Registers are subclasses of \texttt{IssueRegistry} that usually only override the \texttt{getIssues()} method to return the list of custom Issues. The registry must be referenced in the \texttt{build.gradle} file (in Android Studio) or in a manifest file (in Eclipse) to enable Lint to find it.
 
 Once every component has been implemented, to actually include the Lint check in the list of rules enforced by the tool one must copy the generated JAR file of the library in the \texttt{$\sim$/.android/lint/} directory. Using Gradle in Android Studio, one can write a snippet to automatically copy the JAR after each \textit{install} command.
 
@@ -648,19 +649,19 @@ Once every component has been implemented, to actually include the Lint check in
   \includegraphics[width=\textwidth]{Images/LifecycleSta/UML/Implementation.jpg}
   \caption[Lifecycle Static Checks Implementation UML]{UML Diagram for the Lifecycle Static Checks Implementation}
 \end{figure}
-The detectors \texttt{BroadcastReceiverDetector} and \texttt{GoogleApiClientDetector} are implementations of \texttt{JavaScanner} and they both define a \texttt{ForwardingAstVisitor} subclass to implement their AST Traversal behavior.
+The Detectors \texttt{BroadcastReceiverDetector} and \texttt{GoogleApiClientDetector} are implementations of \texttt{JavaScanner} and they both define a \texttt{ForwardingAstVisitor} subclass to implement their AST Traversal behavior.
 
-In particular, \texttt{BroadcastReceiverVisitor} employs the \texttt{visitMethodInvocation(MethodInvocation)} callback to detect the calls to registration and unregistration. First, it checks that the current \texttt{MethodInvocation} is from the correct class (either \texttt{Context} for global receivers or \texttt{LocalBroadcastManager} for local receivers) and, if so, it stores the variable name in a list field variable. If it's the unregistration method, it also checks if the caller method is \texttt{onSaveInstanceState()} and in case shows a warning to the user. In the \texttt{afterCheckFile()} callback,  \texttt{BroadcastReceiverDetector} checks the stored values consistency, showing an issue if an unregistration is missing or if the same receiver is unregistered multiple times (without any try/catch block). In that case, it computes the code location handle to show a warning to the user in the correct place.
+In particular, \texttt{BroadcastReceiverVisitor} employs the \texttt{visitMethodInvocation(MethodInvocation)} callback to detect the calls to registration and unregistration. First, it checks that the current \texttt{MethodInvocation} is from the correct class (either \texttt{Context} for global receivers or \texttt{LocalBroadcastManager} for local receivers) and, if so, it stores the variable name in a list field variable. If it's the unregistration method, it also checks if the caller method is \texttt{onSaveInstanceState()} and in case shows a warning to the user. In the \texttt{afterCheckFile()} callback,  \texttt{BroadcastReceiverDetector} checks the stored values consistency, showing an Issue if an unregistration is missing or if the same receiver is unregistered multiple times (without any try/catch block). In that case, it computes the code location handle to show a warning to the user in the correct place.
 
 \texttt{GoogleApiClientVisitor} also receives the \texttt{visitMethodInvocation(MethodInvocation)} callback and checks if the current invocation is either a connection or a disconnection, setting a boolean flag for each. If the current class is an Activity or a Fragment, it checks that the caller method is \texttt{onStart()} or \texttt{onReceive()} respectively. During \texttt{afterCheckFile()}, the \texttt{GoogleApiClientDetector} shows a warning if the connection flag is set but the disconnection one is not, computing the correct location handle.
 
-Finally, the \texttt{LifecycleIssuesRegistry} simply sends the \texttt{Issue} objects (defined as static fields in the detector classes) to the Lint tool.
+Finally, the \texttt{LifecycleIssuesRegistry} simply sends the \texttt{Issue} objects (defined as static fields in the Detector classes) to the Lint tool.
 
-\fxnote*{New}{\subsection{Evaluation}}
+\subsection{Evaluation}
 
 \subsubsection{General Properties}
 \begin{itemize}
-	\item Applicability: the static lifecycle tests target a specific subset of Android applications, i.e. those that employ the components linked to each detector. Moreover, they are useful mostly in the early stages of development to recognize inconsistencies when the developer is coding a particular Activity or Fragment, since the issues would likely be detected at the first run or test case via crashes or logged errors.
+	\item Applicability: the static lifecycle tests target a specific subset of Android applications, i.e. those that employ the components linked to each detector. Moreover, they are useful mostly in the early stages of development to recognize inconsistencies when the developer is coding an Activity or Fragment, since the issues would likely be detected at the first run or test case via crashes or logged errors.
 	\item Effectiveness: static analysis in general can produce false negatives or false positives, so there may be situations where the developer is notified of a non-relevant problem or a real issue is not detected. For example, if the developer decides to employ the checked components in a non-standard way (e.g. register a Broadcast Receiver in an Activity and unregister it in another, passing the reference between them) the tool would wrongly recognize it as a problem.
 	\item Usability: the static checks are completely integrated in the Lint tool available in the development IDE, so each of them behaves exactly as the built-in detectors. For this reason, the issues are both displayed as a visual clue on the code (the detected problem is highlighted and a warning message is shown) and they are included on the project-wide analysis run on demand by the developer.
 	\item Performance: the Lint tool is usually able to analyze an entire project in a few seconds, checking for all the listed issues. The code of the developed lifecycle checks does not present any criticality from the performance point of view, since it employs only a AST Traversal technique on a single Java class.
@@ -678,10 +679,10 @@ Since the lifecycle static checks are effective mostly in the early stages of de
 \subsection{Lifecycle Test Cases}
 In this section a dynamic approach to lifecycle testing is presented, as opposed to the static technique described in the previous section.
 
-The idea is to provide to the developer pre-generated test cases that allow to explore the most common lifecycle changes, to overcome the limitation of the built-in testing frameworks that only provide low-level methods that need to be carefully chained each time. With the proposed approach, the complexity of managing the lifecycle transitions is completely hidden to the developer, which can only focus on expressing actions to be performed and conditions to be checked during the test execution.
+The idea is to provide to the developer pre-generated test cases that allow to explore the most common lifecycle changes, to overcome the limitation of the built-in testing frameworks that only offer low-level methods that need to be carefully chained each time. With the proposed approach, the complexity of managing the lifecycle transitions is completely hidden to the developer, which can only focus on expressing actions to be performed and conditions to be checked during the test execution.
 
 \subsection{Design}
-To allow custom actions and checks during the pre-defined lifecycle tests the system uses several callbacks, for example the \textit{PauseCallback} allows the developer to specify some actions and checks before the component is paused, some checks while it is paused and some other actions and checks when the component is resumed again. These callbacks are defined by the developer inside a test case and then used by the system during the actual lifecycle tests in the appropriate moments.
+To allow custom actions and checks during the pre-defined lifecycle tests the system uses several callbacks, for example the \textit{PauseCallback} gives the opportunity to specify some actions and checks before the component is paused, some checks while it is paused and some other actions and checks when the component is resumed again. These callbacks are defined by the developer inside a test case and then used by the system during the lifecycle tests in the appropriate moments.
 
 The pre-generated lifecycle tests are defined for two frameworks:
 \begin{itemize}
@@ -746,7 +747,7 @@ The defined tests are:
 		\item \texttt{onResume()}
      	\item \textit{Actions and assertions after the recreation}
 	\end{itemize}
-	The test case also provides a way to check the actual contents of the saved instance state \texttt{Bundle} to see if it contains the correct data passed from the old to the new instance of the component.
+	The test case also provides a way to check the contents of the saved instance state \texttt{Bundle} to see if it contains the correct data passed from the old to the new instance of the component.
 	\item Rotation: simulates the device being rotated, from portrait to landscape modes or vice versa. By default, from the lifecycle point of view this has the same effect of a recreation, but the developer can specify a different behavior changing the \texttt{configChanges} attribute in the application manifest. This test case can be useful to see if the component dynamically adapts to the new rotation, e.g. providing a different UI layout.
 	\begin{itemize}
 		\item \texttt{onCreate()}
@@ -770,17 +771,17 @@ The dynamic lifecycle tests library~\cite{DynamicLifecycleTesting} is split in t
 The \texttt{LifecycleTest} class inside the \texttt{LifecycleTesting} module is the main class of the system. It defines:
 \begin{itemize}
 	\item Abstract methods implemented by the sub-modules that allow to specify the means to control the component lifecycle, according to their structure.
-	\item Abstract methods implemented by the end-developer that allow to pass the callbacks for each lifecycle test.
-	\item Helper methods that define the correct sequence of lifecycle callbacks for each of the tests, which can also be used by the end-developer to chain several test cases together.
+	\item Abstract methods implemented by the end-developer that enable to pass the callbacks for each lifecycle test.
+	\item Helper methods that define the correct sequence of lifecycle callbacks for each of the tests, which can also be used by the end-developer to chain a number of test cases together.
 	\item The actual tests that use the previous three sets of methods to drive the lifecycle and to perform actions and checks in between.
 \end{itemize}
 Inside the module, several interfaces for the callbacks are also defined. 
 
-The \texttt{RobolectricLifecycleTest} class inside the  \texttt{RobolectricLifecycleTesting} module is the implementation of the lifecycle tests for the Robolectric framework. Besides implementing the methods to drive the component lifecycle using the Robolectric \texttt{ActivityController} class, it also provides the abstract method \texttt{getActivityClass()} to allow the developer to define the activity under test and the utility \texttt{getActivity()} that allows to retrieve the activity during a callback.
+The \texttt{RobolectricLifecycleTest} class inside the  \texttt{RobolectricLifecycleTesting} module is the implementation of the lifecycle tests for the Robolectric framework. Besides implementing the methods to drive the component lifecycle using the Robolectric \texttt{ActivityController} class, it also provides the abstract method \texttt{getActivityClass()} to allow the developer to define the Activity under test and the utility \texttt{getActivity()} that gives the possibility to retrieve the Activity during a callback.
 
 Activity Test Rule tests are covered by the \texttt{ActivityRuleLifecycleTest} class inside the \texttt{ActivityTestRuleLifecycleTesting} module. It implements the lifecycle methods using the Android \texttt{Instrumentation} class and provides the abstract method \texttt{initializeActivityTestRule()} to allow the developer to define the Activity Test Rule under test.
 
-\fxnote*{New}{\subsection{Evaluation}}
+\subsection{Evaluation}
 
 \subsubsection{General Properties}
 \begin{itemize}
@@ -805,7 +806,7 @@ The defined tests are:
 		\item Fixed In: pull request \#3912\footnote{\url{https://github.com/wordpress-mobile/WordPress-Android/pull/3912}}
 		\item Problem Description: in the profile page, if the user typed a value (e.g. his/her name) and then rotated the device, the inserted data would be lost.
 		\item Test: the lifecycle test, defined in Espresso, exploits the rotation callback by first typing the name value and then, after the transition, asserting the input contents. The source code of the test can be found in listing~\ref{lst_lifecycle_wp}.
-		\item Causes and Solutions: the bug was caused by not saving the instance of the views at the device rotation. The chosen solution was to employ a \texttt{DialogFragment} component that automatically manages button and dialog, including their lifecycle.
+		\item Causes and Solutions: the bug was caused by not saving the instance of the Views at the device rotation. The chosen solution was to employ a \texttt{DialogFragment} component that automatically manages button and dialog, including their lifecycle.
 	\end{itemize}
 	\item Blank post content
 	\begin{itemize}
@@ -842,11 +843,11 @@ Moving from the specific type of events related to the lifecycle to a more gener
 
 Given this lack of testing capabilities, several approaches related to the issue of race conditions were devised. These tools, like dynamic analysis with EventRacer and static analysis with DEvA, described in detail in section \ref{section_race_tools}, do not focus on manual testing but on automatic detection of concurrency problems among events, mainly related to data races.
 
-The solution proposed in the second part of this thesis aims at being a complementary tool to these approaches. Instead of focusing on automatic detection, it provides the means to manually specify event-related conditions during standard unit, integration or UI tests. This means that this approach presents the advantage of avoiding the issue of false positives and false negatives, intrinsic for detection tools, but the developer has to code test cases by hand to cover the relevant parts of the application.
+The solution proposed in the second part of this thesis aims at being a complementary tool to these technique. Instead of focusing on automatic detection, it gives the means to manually specify event-related conditions during standard unit, integration or UI tests. This means that this approach presents the advantage of avoiding the issue of false positives and false negatives, intrinsic for detection tools, but the developer has to code test cases by hand to cover the relevant parts of the application.
 
-More in detail, with the proposed event-based testing library the developer is able to specify which events to observe during the execution of the application and then to define consistency checks on their stream, such as happens-before relationship, ordering and existence.
+More in depth, with the proposed event-based testing library the developer is able to specify which events to observe during the execution of the application and then to define consistency checks on their stream, such as happens-before relationship, ordering and existence.
 
-This approach allows to detect possible race conditions like the other tools, but the scope is not limited to data races: the developer is able to specify any type of condition on any event generated by the application, from user input to sensor data callbacks. Moreover, the tool does not only apply to race conditions but it also allows to focus on ordering among similar events, to quantify the amount of events of a certain type during a particular execution and so on.
+This approach allows to detect race conditions like the other tools, but the scope is not limited to data races: the developer is able to specify any type of condition on any event generated by the application, from user input to sensor data callbacks. Moreover, the tool does not only apply to race conditions but it also allows to focus on ordering among similar events, to quantify the amount of events of a certain type during an execution and so on.
 
 The implementation of this event-based testing approach exploits the ReactiveX library, an innovative system of industrial interest (it is employed for example by Microsoft and Netflix) that allows to observe, transform and listen to events.
 
@@ -855,13 +856,13 @@ The following sections first present a formalization of the temporal assertions 
 \section{Temporal Assertions Language}
 
 \subsection{Consistency Checks}
-An approach to event-based testing is to define consistency checks, i.e. conditions that should be verified in the event stream. For example we can define the happens-before relationship between two or more events, specify the exact number of events of a certain type that can appear during a particular execution and so on.
+An approach to event-based testing is to define consistency checks, i.e. conditions that should be verified in the event stream. For example we can define the happens-before relationship between two or more events, specify the exact number of events of a certain type that can appear during an execution and so on.
 
 The idea of event-based testing described in this part of the thesis is based on a temporal assertions language: a language that allows to express consistency checks on some of the events generated during the application execution and, in case they are not satisfied, the assertion error is notified to the developer. A detailed explanation of the language to express checks is reported in the next sections.
 
 First, let's formally define some terminology:
 \begin{itemize}
-	\item Event Stream $E$: the list of all the events registered during a particular execution, i.e. from the tool start at time \textit{t1} until the tool stop at time \textit{t2}.
+	\item Event Stream $E$: the list of all the events registered during an execution, i.e. from the tool start at time \textit{t1} until the tool stop at time \textit{t2}.
 	\item Event $e \in E$: an event contained in the stream. The event stream is totally ordered: each event has a generation time and given any two events $e1$ and $e2$ we have either $e1 \prec e2$ or $e2 \prec e1$.
 	\item Consistency Check $c$: a rule among one or more events that should be verified in the stream. Once specified, the check is applied to the stream and returns either a \textit{Success} or \textit{Failure} outcome.
 	\item Matcher $m$: a specification that describes one or more events in the stream. It is used by the consistency checks to match the events, in order to express a condition on them. For example, considering the events to be names, if $E= \big\{ John, Bill, Mary, Jack, Elizabeth \big\} $, the matcher $starts\_with\_J$ would match (i.e. return true) the events $John$ and $Jack$.
@@ -879,7 +880,7 @@ In the proposed formalization, each check is described by:
 		\item $between(e2, e1, e3) \equiv before(e2, e1) \land before(e1, e3)$ means that the event \textit{e1} is generated in the sequence after \textit{e2} and before \textit{e3}, i.e. $e2 \prec e1 \prec e3$.
 	\end{itemize}
 	\item Visual representation: shows some examples of event streams and the corresponding check outcome. The outcome is placed in the spot where it is actually produced by the system: some checks may not need to explore the whole stream, i.e. if the condition is fulfilled or violated after an intermediate event the check "short-circuits".
-	\item Real code example: an example of check specification as implemented by the system. The structure of the Java classes and objects will be clear later when the implementation is explained in detail.
+	\item Real code example: an example of check specification as implemented by the system. The structure of the Java classes and objects will be clear later when the implementation is explained in depth.
 \end{itemize}
 
 
@@ -1030,7 +1031,7 @@ The first type of checks focuses on single events at a time: for example we may 
   \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
   
   	\begin{lstlisting}
-	/* Can send broadcast only if the service is working */
+	/* Can send broadcast only if the Service is working */
 	anEventThat(isSendBroadcast())
 		.canHappenOnlyBetween(
 			anEventThat(isServiceStart(mainService)),
@@ -1096,7 +1097,7 @@ First Order Logic specifications use the counting quantifiers~\cite{Pratt-Hartma
   \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
   
   	\begin{lstlisting}
-	/* If a location change happens, the text view must be updated exactly once */	
+	/* If a location change happens, the TextView must be updated exactly once */	
 	exactly(1).eventsWhereEach(isTextChangeFrom(locationTextView))
 		.mustHappenAfter(anEventThat(isLocationChange()));
 	\end{lstlisting}
@@ -1198,7 +1199,7 @@ First Order Logic specifications use the counting quantifiers~\cite{Pratt-Hartma
   \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
   
   	\begin{lstlisting}
-	/* During the execution of the activity the text is changed exactly four times */
+	/* During the execution of the Activity the text is changed exactly four times */
 	exactly(4).eventsWhereEach(isTextChangeFrom(myTextView))
 		.mustHappenBetween(
 			anEventThat(isActivityLifecycleEvent(ON_RESUME)),
@@ -1214,7 +1215,7 @@ First Order Logic specifications use the counting quantifiers~\cite{Pratt-Hartma
 
 \subsection{Checks on the Whole Stream}
 
-The third type of checks concerns the entire stream of events: they allow for example to specify the number of all the events of a certain type in the whole sequence generated by a particular execution.
+The third type of checks concerns the entire stream of events: they give the possibility, for example, to specify the number of all the events of a certain type in the whole sequence generated by an execution.
 
 \subsubsection{Match In Order}
 
@@ -1258,7 +1259,7 @@ indexOf(e, m, i) \equiv \exists_{=i} e' \Big( match(e', m) \land before(e', e) \
   \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
   
   	\begin{lstlisting}
-	/* Defines the only valid fragment backstack changes sequence */	
+	/* Defines the only valid Fragment backstack changes sequence */	
 	allEventsWhereEach(isFragmentBackstackChange())
 		.matchInOrder(
 			isFragmentBackstackPush(mainFragment),
@@ -1440,8 +1441,7 @@ These checks assess the existence of one or more events in the stream. Similarly
 \egroup
 \end{center}
 
-\fxnote*{New}{
-\subsubsection{Exist Events After}}
+\subsubsection{Exist Events After}
 
 \begin{center}
 \bgroup
@@ -1494,8 +1494,7 @@ These checks assess the existence of one or more events in the stream. Similarly
 \egroup
 \end{center}
 
-\fxnote*{New}{
-\subsubsection{Exist Events Before}}
+\subsubsection{Exist Events Before}
 
 \begin{center}
 \bgroup
@@ -1535,7 +1534,7 @@ These checks assess the existence of one or more events in the stream. Similarly
   \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
   
   	\begin{lstlisting}
-	/* At least once, the service starts after a fragment initialization */
+	/* At least once, the Service starts after a Fragment initialization */
 	exist(
 		before(anEventThat(isServiceStart(mainService))),
 		exactly(1))
@@ -1548,8 +1547,7 @@ These checks assess the existence of one or more events in the stream. Similarly
 \egroup
 \end{center}
 
-\fxnote*{New}{
-\subsubsection{Exist Events Between}}
+\subsubsection{Exist Events Between}
 
 \begin{center}
 \bgroup
@@ -1589,7 +1587,7 @@ These checks assess the existence of one or more events in the stream. Similarly
   \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
   
   	\begin{lstlisting}
-	/* At least once, the service must query the database during its execution */
+	/* At least once, the Service must query the database during its execution */
 	exist(
 		between(anEventThat(isServiceStart(mainService)),
 				anEventThat(isServiceStart(mainService))),
@@ -1648,7 +1646,7 @@ These constructs allow to specify the standard logic connectives between one or 
   \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
   
   	\begin{lstlisting}
-	/* The service must only be started after the button is clicked */
+	/* The Service must only be started after the button is clicked */
 	allHold(
 		anEventThat(isStartService())
 			.canHappenOnlyAfter(isClickOn(startButton)),
@@ -1879,7 +1877,7 @@ These constructs allow to specify the standard logic connectives between one or 
 To implement the event-based testing approach described so far, the following main components are employed:
 \begin{itemize}
 	\item Events: objects that represent events in the application.
-	\item Event Generators: structures that actually create the events whenever something happens in the application.
+	\item Event Generators: structures that create the events whenever something happens in the application.
 	\item Checks: ways to specify the consistency rules defined in the previous section.
 	\item Results: the outcomes of the checks.
 	\item Event Monitor: the main interface of the system, receives the events, applies the checks and produces the results.
@@ -1896,13 +1894,13 @@ Figure \ref{fig:event_uml_design} shows the design UML class diagram. The \texti
 
 Each \textit{Check} contains the logic of a consistency check: it receives each \textit{Event} of the stream in order and acts accordingly. A \textit{Check} has the possibility to short-circuit its behavior (i.e. interrupt the stream of events if the consistency check succeeds or fails before the end of the sequence). In any case, when it short-circuits or the stream comes to an end, the \textit{Check} produces one and only one \textit{Result} object.
 
-Each \textit{Result} contains an \textit{Outcome} and a message describing it. In particular, an \textit{Outcome} can be a \textit{Success}, a \textit{Failure} and a \textit{Warning}. A \textit{Warning} outcome has not been included in the formal specifications of the checks in the previous section for simplicity: its meaning is that the \textit{Check} succeeded with some minor error or in a particular situation (for example a check that specifies that an event A always generates exactly one event B may return \textit{Warning} if no event A has been found in the sequence).
+Each \textit{Result} contains an \textit{Outcome} and a message describing it. In particular, an \textit{Outcome} can be a \textit{Success}, a \textit{Failure} and a \textit{Warning}. A \textit{Warning} outcome has not been included in the formal specifications of the checks in the previous section for simplicity: its meaning is that the \textit{Check} succeeded with some minor error or in a peculiar situation (for example a check that specifies that an event A always generates exactly one event B may return \textit{Warning} if no event A has been found in the sequence).
 
 A \textit{Descriptor} allows to specify a \textit{Check}, i.e. it is the main component of the temporal assertion language syntax. It describes one or more events of the stream and provides methods to express a condition on them. In particular, \textit{SingleEvent} describes a single event of a certain type at a time, \textit{SetOfEvents} describes a set of events of a certain type at a time and \textit{AllEvents} describes all the events of a certain type in the whole stream. To determine the type of the events identified by the \textit{Descriptor}, a \textit{Matcher} object is used.
 
 The cardinality of the descriptor \textit{SetOfEvents} is defined by a \textit{Quantifier} that has an integer value as input. A quantifier can be \textit{Exactly}, \textit{AtMost} or \textit{AtLeast}.
 
-Finally, a \textit{CheckConnective} allows to transform one or more \textit{Check} objects into a single \textit{Check}, i.e. it specifies one of the standard logic connectives \textit{Not}, \textit{And}, \textit{Or}, \textit{SingleImplication} and \textit{DoubleImplication}.
+Finally, a \textit{CheckConnective} enables to transform one or more \textit{Check} objects into a single \textit{Check}, i.e. it specifies one of the standard logic connectives \textit{Not}, \textit{And}, \textit{Or}, \textit{SingleImplication} and \textit{DoubleImplication}.
 
 \section{Implementation}
 
@@ -1929,7 +1927,7 @@ An Observable is in charge of emitting events: it generates zero, one or more th
 
 An Observable can be modified by an Operator: most Operators can be applied on an event stream generated by an Observable to return a new modified event stream. For example the Operator \texttt{map(function)} allows to apply a function to each event in the stream (e.g. a stream of numbers modified by a map with a summing function may become a stream where all the original numbers have been increased by 1). Since the result of an Operator is an Observable, Operators can be applied in chain (i.e. apply an Operator on the result of another Operator) to achieve complex modifications.
 
-A Subscriber consumes the events emitted by the Observables (that can either be "original" or the result of one or more Operators). Subscribers allow to react to asynchronous results: for example, an Observer may send a network response whenever it is ready, the Subscriber receives it and shows the information to the user.
+A Subscriber consumes the events emitted by the Observables (that can either be "original" or the result of one or more Operators). Subscribers react to asynchronous results: for example, an Observer may send a network response whenever it is ready, the Subscriber receives it and shows the information to the user.
 
 The advantages of the Rx paradigm are:
 \begin{itemize}
@@ -1958,7 +1956,7 @@ RxAndroid~\cite{RxAndroid} is a RxJava module that provides specific bindings fo
 Several modules allow Android developers to observe many events inside an application. For example, we can observe:
 \begin{itemize}
 	\item UI Widgets: RxBinding~\cite{RxBinding} module allows to observe user inputs or changes on UI widgets like TextView (e.g. clicks, text change), app bar menu (e.g. option selected), etc.
-	\item Settings: RxPreferences~\cite{RxPreferences} module allows to receive events from the Shared Preferences system (storage provided by Android to store the app settings).
+	\item Settings: RxPreferences~\cite{RxPreferences} module gives the possibility to receive events from the Shared Preferences system (storage provided by Android to store the app settings).
 	\item Files: RxFileObserver~\cite{RxFileObserver} fires events for file accesses or changes.
 	\item Database: StorIO~\cite{StorIO} allows to manage and observe an SQLite database.
 	\item Network: ReactiveNetwork~\cite{ReactiveNetwork} detects network changes (e.g. WiFi or mobile connection).
@@ -1966,12 +1964,12 @@ Several modules allow Android developers to observe many events inside an applic
 	\item Broadcasts: RxBroadcast~\cite{RxBroadcast} builds an event stream from a Broadcast Receiver results.
 	\item Location: ReactiveLocation~\cite{ReactiveLocation} allows to observe location changes.
 	\item Sensors: ReactiveSensors~\cite{ReactiveSensors} fires events from hardware sensors.
-	\item Permissions: RxPermissions~\cite{RxPermissions} allows to receive events from the permissions manager.
+	\item Permissions: RxPermissions~\cite{RxPermissions} enables the reception of events from the permissions manager.
 	\item Google Maps: RxGoogleMaps~\cite{RxGoogleMaps} fires events related to Google Maps.
 	\item Google Wear: RxWear~\cite{RxWear} allows to observe messages to and from a connected smartwatch.
 \end{itemize}
 
-The utility module RxLifecycle~\cite{RxLifecycle} allows to bind the listed Observables to the lifecycle of an Activity or a Fragment to avoid leaks. For example, without any binding to the lifecycle, an Observable that emits text change events on a TextView never ends (i.e. never calls \texttt{onCompleted()} or \texttt{onError()}) because it has no way of understanding when the text stops changing. In that situation the Observable will run even after the Activity has been removed and, keeping its reference, won't allow the garbage collector to delete the instance (memory leak). Thanks to RxLifecycle the developer can bind the Observable until a lifecycle event occurs (e.g. Activity is stopped), allowing it to terminate correctly.
+The utility module RxLifecycle~\cite{RxLifecycle} gives the opportunity to bind the listed Observables to the lifecycle of an Activity or a Fragment to avoid leaks. For example, without any binding to the lifecycle, an Observable that emits text change events on a TextView never ends (i.e. never calls \texttt{onCompleted()} or \texttt{onError()}) because it has no way of understanding when the text stops changing. In that situation the Observable will run even after the Activity has been removed and, keeping its reference, won't allow the garbage collector to delete the instance (memory leak). Thanks to RxLifecycle the developer can bind the Observable until a lifecycle event occurs (e.g. Activity is stopped), enabling it to terminate correctly.
 
 \subsection{The System}
 \begin{figure}
@@ -1995,13 +1993,13 @@ At this point a call to \texttt{startVerification(Subscriber<Event>, Subscriber<
 
 When the developer calls \texttt{stopVerification()} the stream is interrupted and all the remaining check results are generated.
 
-Finally, the class also provides the utility method \texttt{fireCustomEvent(Event)} that allows to directly generate an \texttt{Event} without creating an \texttt{Observable}.
+Finally, the class also supplies the utility method \texttt{fireCustomEvent(Event)} that allows to directly generate an \texttt{Event} without creating an \texttt{Observable}.
 
 Note that the \texttt{EventMonitor} observes the events on the thread specified by each Observable (usually the main thread) and runs the checks in a separate thread to avoid possible slowdowns of the UI thread.
 
 The \texttt{EventMonitor} can be used as:
 \begin{itemize}
-	\item Runtime monitor during the manual debugging phase of the application development: just like the standard assertions placed in production code, the developer can use the monitor for example inside an activity to log all events and the results of the checks.
+	\item Runtime monitor during the manual debugging phase of the application development: just like the standard assertions placed in production code, the developer can use the monitor for example inside an Activity to log all events and the results of the checks.
 	\item Testing mechanism: the developer can start the monitor at the beginning of a test and add some specific checks, then execute the actions allowed by the chosen testing framework and finally stop the monitor at the end. The monitor works as a standard assertion mechanism, making the test fail in case a consistency check is not successful. Note that this mechanism, since it's not framework-specific, can be used for any type of test, from unit to UI, and with any library. A code example of the EventMonitor used as a testing mechanism can be found in listing \ref{lst_event_test}.
 \end{itemize}
 
@@ -2018,7 +2016,7 @@ The \texttt{EventMonitor} applies a check on the event stream by calling the Ope
 Connectives between checks are implementations of \texttt{CheckConnective}, which is in turn a subclass of \texttt{Check}. Each of them implements a \texttt{ResultsSubscriber} that, analogously to a \texttt{CheckSubscriber}, receives the results of its terms, performs some computation and then produces a single \texttt{Result} as output. \texttt{Not}, \texttt{AllHold} and \texttt{AnyHolds} (implementations of the logic \textit{negation}, \textit{and} and \textit{or} respectively) provide static methods as constructors (e.g. \texttt{allHold(check1, check2, check3)}), while \texttt{IfThen} and \texttt{IfAndOnlyIf} (implementations of \textit{single} and \textit{double implication}) are built starting from the \texttt{ProvidedThat} and \texttt{IsSatisfied} classes respectively (e.g. \texttt{providedThat(check1).then(check2)}), to make the calls more human-readable.
 
 \subsection{Descriptors}
-The descriptors are subclasses of \texttt{AbstractEventDescriptor}. \texttt{AnEventThat} (single event) and \texttt{AllEventsWhereEach} (all the events in the whole stream) provide static constructors, while \texttt{EventsWhereEach} descriptors (sets of events) do not provide one because they are built starting from a quantifier, e.g. \texttt{exactly(10).eventsWhereEach(...)}.
+The descriptors are subclasses of \texttt{AbstractEventDescriptor}. \texttt{AnEventThat} (single event) and \texttt{AllEventsWhereEach} (all the events in the whole stream) provide static constructors, while \texttt{EventsWhereEach} descriptors (sets of events) do not have one because they are built starting from a quantifier, e.g. \texttt{exactly(10).eventsWhereEach(...)}.
 
 The \texttt{Exist} class provides the means to express the existential quantifiers, i.e. \texttt{existsAnEventThat(...)} and \texttt{exist(...).eventsWhereEach(...)}. The latter type uses quantifiers and constraints to define the cardinality of the set in the first case and the possible validity interval in the second.
 
@@ -2028,12 +2026,12 @@ Quantifiers are subclasses of \texttt{AbstractQuantifier}. Each of them uses an 
 
 The matchers that describe the type of events identified by each descriptor are implemented using the external library JavaHamcrest~\cite{Hamcrest}, a well known way to describe objects. The library provides several matchers on the most common objects (like Strings, e.g. \texttt{isEmptyString()}, \texttt{startsWith(String)}, etc.), some connectives to compose matchers (e.g. \texttt{allOf(Matcher...)}) and the means to implement custom matchers, which have been used to define matchers for the events.
 
-\fxnote*{New}{\section{Evaluation}}
+\section{Evaluation}
 
 \subsection{Applicability}
 The event-based testing library is most suitable for applications that are characterized by a high number of different operations that can possibly run concurrently. This usually means applications that heavily employ the network (i.e. that query the web in background), the device sensors (e.g. receive GPS events to update a map) and/or, in general, that perform several sub-routines in parallel thanks to Services and threads.
 
-However, the library may be applicable also to more "sequential" applications, especially for the event counting and ordering capabilities, e.g. the developer might be interested in easily quantifying the number of click events during a particular execution.
+However, the library may be applicable also to more "sequential" applications, especially for the event counting and ordering capabilities, e.g. the developer might be interested in easily quantifying the number of click events during an execution.
 
 Event-based testing is especially useful for applications that already use the ReactiveX library in production code since the Observables to generate the events are already built.
 
@@ -2042,9 +2040,9 @@ The library can be applied both as a testing support tool, expressing conditions
 \subsection{Effectiveness}
 To discuss the effectiveness of the event monitor tool we can focus on three aspects:
 \begin{itemize}
-	\item Event Stream Composition: it may be noted that, thanks to the available listeners and RxAndroid extensions, many events can be easily observed in an Android application, like user interaction on most View components, sensor data, broadcasts, etc. However, there are many events that cannot easily be observed, mainly because Android does not provide any listener on which to build the ReactiveX Observable (e.g. no listener is available to see when a View element becomes visible or hidden) or because it only allows to manage a single listener (e.g. only one focus change listener is allowed per View component and, if the developer uses one inside the production code of the application, RxJava cannot use another to build the Observable). This of course can limit the event stream composition and, as a consequence, the possible checks that can be expressed on it.
-	\item Assertions Language Expressiveness: the proposed assertion language allows to express temporal constraints (events can happen only after/before/between other events), causality (events must happen after/before/between other events), existence, ordering and quantification among events, as well as correlating check results via logic connectives. This expressiveness allows to express the majority of temporal operators, but may be extended in future work to support more complex assertions, for example like the possibility of correlating the matched events between several checks.
-	\item Results Handling: the result of each consistency check contains an outcome (success, failure or warning) and a report message to understand its meaning. For example, the result of the check asserting that a text change event can only happen after a fragment started can contain the report \textit{The event $\left\{\mbox{Text change "MyText" from TextView1}\right\}$ was found before an event that is a fragment lifecycle event "onStart"}, which clearly shows what event made the check fail. Moreover, the event monitor offers the possibility of printing the whole event stream as it was registered during the execution, allowing the developer to analyze it to find possible causes of a bug.
+	\item Event Stream Composition: it may be noted that, thanks to the available listeners and RxAndroid extensions, many events can be easily observed in an Android application, like user interaction on most View components, sensor data, broadcasts, etc. However, there are many events that cannot easily be observed, mainly because Android does not provide any listener on which to build the ReactiveX Observable (e.g. no listener is available to see when a View element becomes visible or hidden) or because it only allows to manage a single listener (e.g. only one focus change listener is allowed per View component and, if the developer uses one inside the production code of the application, RxJava cannot use another to build the Observable). This of course can limit the event stream composition and, as a consequence, the checks that can be expressed on it.
+	\item Assertions Language Expressiveness: the proposed assertion language allows to express temporal constraints (events can happen only after/before/between other events), causality (events must happen after/before/between other events), existence, ordering and quantification among events, as well as correlating check results via logic connectives. This expressiveness gives the possibility to express the majority of temporal operators, but may be extended in future work to support more complex assertions, for example like the possibility of correlating the matched events between several checks.
+	\item Results Handling: the result of each consistency check contains an outcome (success, failure or warning) and a report message to understand its meaning. For example, the result of the check asserting that a text change event can only happen after a Fragment started can contain the report \textit{The event $\left\{\mbox{Text change "MyText" from TextView1}\right\}$ was found before an event that is a Fragment lifecycle event "onStart"}, which clearly shows what event made the check fail. Moreover, the event monitor offers the possibility of printing the whole event stream as it was registered during the execution, allowing the developer to analyze it to find the causes of a bug.
 \end{itemize}
 
 \subsection{Usability}
@@ -2071,7 +2069,7 @@ The library can be extended by the developer to adapt it to the specific needs o
 \end{itemize}
 
 \subsection{Comparison with Testing Frameworks}
-Comparing temporal assertions with the standard Android testing frameworks like Espresso, Robolectric and the instrumented unit tests, the event-based testing approach can be seen both as an extension and as an alternative.
+Comparing temporal assertions with the standard Android testing frameworks like Espresso, Robolectric and the instrumented unit tests, the event-based testing technique can be seen both as an extension and as an alternative.
 
 It is an extension because the event monitor is a tool that needs to be executed during a standard test case, since it is necessary to define the tested components and the actions (e.g. clicks) to be performed.
 
@@ -2080,7 +2078,7 @@ It is, however, also an alternative to the standard assertions that can be used 
 \subsection{Comparison with Race Detection Tools}
 Comparing the proposed solution with race detectors like EventRacer and DEvA, it is first important to stress the fact that the approach is different. The mentioned tools try to detect possible race conditions, either dynamically or statically, without requiring the developer to write any test case. In the event-based testing library, instead, the focus is on manually generated test cases that allow to verify conditions on the event stream. For this reason, event-based testing is proposed as a complementary tool, and not as an alternative.
 
-From the point of view of race conditions, it can be noticed that the two approaches mostly focus on different types races.
+From the point of view of race conditions, it can be noticed that the two techniques mostly focus on different types races.
 \begin{itemize}
 	\item EventRacer and DEvA focus their attention mainly on data races, i.e. they detect when two or more callbacks that use the same variable may be in conflict. If we consider the example (reported in listing~\ref{lst_event_race_detectors}) of a button click callback where a Service is invoked and a connection callback where the Service is initialized, a race might be detected by the tools. In this example, it does not necessarily mean that the click callback cannot happen before the connection one, but just that the developer should handle that situation, e.g. by checking if the Service variable is null in the click callback before using it and, if so, just show a message to the user.
 	\item The event-based testing approach, instead, focuses on races between events that cannot be verified in any possible execution, i.e. specifying that a given event can happen only after/before/between other given events. An example (reported in listing~\ref{lst_event_race_eventbased}) of this can be the situation where the application logic imposes that text change events of an email contents can happen only before the user clicks on the "Send" button.
@@ -2089,7 +2087,7 @@ Given this distinction, we can have races that:
 \begin{itemize}
 	\item Can only be recognized by race detection tools: the example of the click-connection race cannot be expressed with temporal assertions since the two callbacks may happen in any order.
 	\item Can only be tested by the event-based approach: the example of the text changes before the click cannot be recognized by the race detectors since there is no variable in common between the click and the text change callbacks.
-	\item Can be both recognized by race detectors and tested with the event-based approach: an example (reported in listing~\ref{lst_event_race_both}) of this is the event of placing a marker on a map when this has not been initialized yet. These two events generated by the application without user interaction must never be in the wrong order, otherwise the application might crash or result in the marker not being placed on the map. This condition can be expressed with a temporal assertion and, since we have a common variable (the map object), it may be recognized by race detectors.
+	\item Can be both recognized by race detectors and tested with the event-based technique: an example (reported in listing~\ref{lst_event_race_both}) of this is the event of placing a marker on a map when this has not been initialized yet. These two events generated by the application without user interaction must never be in the wrong order, otherwise the application might crash or result in the marker not being placed on the map. This condition can be expressed with a temporal assertion and, since we have a common variable (the map object), it may be recognized by race detectors.
 \end{itemize}
 
 Moreover, with the proposed library the developer is able to focus on events in general, and not only on race conditions like the aforementioned tools. This means that there is the possibility of looking at the event stream generated by an execution from a broader perspective, being also able to express conditions on existence, ordering and quantification of events.
@@ -2136,7 +2134,7 @@ The defined checks, valid for all the tests, enforce the following conditions:
 	\item Clicking on the "Publish" button must always be followed either by a Toast display (e.g. an error occurred) or by the publication procedure start, i.e. there cannot be situations where the button is unresponsive.
 	\item If the Editor Fragment is detached from the host Activity (e.g. the application is closed) while a media upload is in progress, the upload must be interrupted.
 	\item Before the publication procedure starts, all media uploads must complete.
-	\item The media upload progress values must be sent in order, i.e. there cannot be situations where the service sends incoherent percentages of uploaded content.
+	\item The media upload progress values must be sent in order, i.e. there cannot be situations where the Service sends incoherent percentages of uploaded content.
 \end{itemize}
 The test case \texttt{testPublishError()} also adds a specific check that states that the click on the "Publish" button must generate an error saying that the post is empty.
 
@@ -2174,13 +2172,13 @@ REPORT: All 131 events were in order}
 \section{Conclusions}
 This thesis presented a comprehensive testing approach that focuses on the events generated during the execution of an Android application, covering different development stages and tasks. It analyzed first a subset of events, lifecycle transitions, and then focused on a more generic concept of events.
 
-Section \ref{section_lifecycle_static} proposed a static analysis approach for lifecycle testing, focusing on the management of selected components according to the host Activity/Fragment lifecycle. This approach is mainly useful in the early stages of development to warn the developer of possible criticalities, concerning performance or correctness.
+Section \ref{section_lifecycle_static} proposed a static analysis technique for lifecycle testing, focusing on the management of selected components according to the host Activity/Fragment lifecycle. This approach is mainly useful in the early stages of development to warn the developer of possible criticalities, concerning performance or correctness.
 
 In section \ref{section_lifecycle_dynamic}, instead, it is reported the description of a dynamic approach for lifecycle testing. The idea is to provide a more complete support for lifecycle testing, hiding to the developers the complexity of driving the transitions and so allowing them to just focus on actions and assertions defined in the test case. The relevance of thoroughly testing an Activity or a Fragment with regard to its lifecycle is an important step to ensure confidence of correctness of the component, since lifecycle handling can often generate many issues.
 
 Part \ref{part_events} proposed an event-based testing library. The idea is to first build an event stream, observing different Android events defined by the developer, and then to express consistency checks on it, using a temporal assertions language. This allows to check for a specific type of race conditions and to assess existence, ordering and quantification of the events generated during the application execution.
 
-Finally, it is interesting to note that the three approaches proposed by the thesis can all be employed at the same time. For example, the developers may use the static lifecycle checks to easily spot problems while coding the application, then define test cases that exploit both temporal assertions and lifecycle tests to verify the consistency in the event stream during critical lifecycle transitions.
+Finally, it is interesting to note that the three techniques proposed by the thesis can all be employed at the same time. For example, the developers may use the static lifecycle checks to easily spot problems while coding the application, then define test cases that exploit both temporal assertions and lifecycle tests to verify the consistency in the event stream during critical lifecycle transitions.
 
 \section{Future Work}
 Possible future extensions on the proposed work include:
@@ -2194,7 +2192,7 @@ Possible future extensions on the proposed work include:
 	\item For dynamic lifecycle testing:
 	\begin{itemize}
 		\item Provide a better testing interface: for example it may be possible to avoid the subclassing and the implementation of the abstract callback methods by providing annotations that automatically generate the required tests. This would allow to define more tests of the same type (e.g. two rotation tests in the same test suite) and to avoid methods that return null if the developer is not interested in some test cases.
-		\item Provide testing not only for Activities but also for Fragments. This would require to create a new testing mechanism (e.g. Fragment Test Rule), since it is not provided by Android.
+		\item Offer the possibility to test not only Activities but also Fragments. This would require to create a new testing mechanism (e.g. Fragment Test Rule), since it is not provided by Android.
 		\item Automatically generate appropriate lifecycle test cases for selected Activities or Fragments, with automated assertion placement.
 	\end{itemize}
 	\item For event-based testing:
@@ -2217,7 +2215,7 @@ Possible future extensions on the proposed work include:
 \begin{appendices}
 \addcontentsline{toc}{part}{Appendices}
 
-\fxnote*{New}{\section{Code Listings}}
+\section{Code Listings}
 \lstset{
   numbers=left,
   frame=single
@@ -2233,7 +2231,7 @@ Possible future extensions on the proposed work include:
 
 \lstinputlisting[label={lst_event_custom_observable},caption={An example of custom Observable for event-based testing: generates the media-related events in the WordPress application. \texttt{EventBusObservable} just provides a static method to easily get the Observable, \texttt{EventBusSubsriber} is an abstract class created for reuse and \texttt{MediaUploadOnSubscribe} is the actual implementation of the Rx Observable that fires the events.}]{Listings/Event/ObservableImplementation.java}
 
-\lstinputlisting[label={lst_event_check},caption={An example of check implementation for event-based testing: the "can happen only between" of \texttt{AnEventThat}. The subscriber is implemented as a finite state machine that handles the events in order, changing state and/or short-circuiting the check if we have a match.}]{Listings/Event/CheckImplementation.java}
+\lstinputlisting[label={lst_event_check},caption={An example of check implementation for event-based testing: the "can happen only between" of \texttt{AnEventThat}. The Subscriber is implemented as a finite state machine that handles the events in order, changing state and/or short-circuiting the check if we have a match.}]{Listings/Event/CheckImplementation.java}
 
 \lstinputlisting[label={lst_event_race_detectors},caption={Race condition that can be recognized by detectors like EventRacer or DEvA but cannot be expressed with a temporal assertion.}]{Listings/Event/RaceExampleDetectorsOnly.java}
 
