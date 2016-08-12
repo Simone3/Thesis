@@ -69,6 +69,12 @@
 % Lengths of indent and space for new paragraphs
 \usepackage[parfill]{parskip}
 
+% EPS images
+\usepackage{epsfig}
+
+% Empty pages
+\newcommand{\emptypage} {\newpage\null\thispagestyle{empty}\newpage}
+
 % For links (should be the last included)
 \usepackage{url}
 \usepackage{hyperref}
@@ -81,11 +87,6 @@
     urlcolor=black
 }
 \usepackage{ulem}
-
-% Document title data
-\title{\Large{TODO\\2015-2016}\\\Huge{TODO}} 
-\author{836897 Simone Graziussi}
-\date{TODO}
 
 
 
@@ -101,21 +102,89 @@
 %................................ TITLE PAGE ................................%
 %............................................................................%
 
-\begin{titlingpage}
-    \maketitle
-    \begin{abstract}
-        \large{TODO}
-    \end{abstract}
-\end{titlingpage}
+\begin{titlepage}
+\vspace*{-2.5cm}
+\bfseries
+\begin{center}
+  \LARGE
+  Politecnico di Milano\\
+  \Large
+  Computer Science and Engineering\\
+
+\psfig{file=Images/Misc/logopm,width=4cm}
+
+\begin{large}
+Scuola di Ingegneria Industriale e dell'Informazione\\
+Computer Science and Engineering\\
+\end{large}
+
+\vspace{2.0cm}
+\begin{Large}
+Android Lifecycle and Event-Based Testing
+\end{Large}  
+\end{center}
+
+\vspace*{4cm}
+\large
+\begin{flushleft}
+\hspace{-2cm}  Advisor: Luciano BARESI\\
+\hspace{-2cm}  Co-Advisor: Konstantin RUBINOV\\
+\end{flushleft}
+\vspace*{1.5cm}
+
+\hspace{6cm}
+\parbox{10cm}{
+    \begin{tabular}{ll}
+         Master thesis by: & \\
+         Simone GRAZIUSSI & matr. 836897\\
+    \end{tabular}
+}
+
+\vspace*{2cm}
+\begin{center}
+  Academic Year 2015-2016
+\end{center}
+
+\end{titlepage}
+
+\emptypage
+
+%............................................................................%
+%................................. ABSTRACTS ................................%
+%............................................................................%
+
+\part*{Abstract}
+Mobile market is continuously expanding, and mobile applications require higher and higher quality standards. The only way a developer can obtain confidence of correctness and usability in a set of specific circumstances is testing.
+
+This thesis analyzes two particular challenges of mobile testing that have been largely overlooked to date, lifecycle management and event concurrency, focusing its attention on the Android operating system.
+
+Application components are characterized by their lifecycle, i.e. by several working states such as running, paused, destroyed, etc. This mechanism needs to be carefully handled by the developer to avoid crashes or unexpected behaviors, but the available means to test the applications with regard to this aspect are lacking. The proposed work addresses this issue first with a static code analysis approach to recognize possible misuses of components, and then with a dynamic technique that allows the developer to drive the application lifecycle to test its robustness.
+
+In addition to lifecycle transitions, mobile applications are characterized by a great number of other events, hundreds of which may be processed every minute, such as sensor data, connectivity changes, user input, network responses, etc. These events can happen in many different orders and frequencies, and, if the developer does not handle them correctly, issues may arise. The aim of the second part of this thesis is to describe an event-based testing approach that allows to observe several events during the application execution and to express consistency checks on their stream by means of a temporal assertions language.
+
+\emptypage
+
+
+\part*{Estratto}
+Il mercato dei dispositivi mobili \`{e} in continua espansione, e le applicazioni  richiedono standard di qualit\`{a} sempre pi\`{u} alti. L'unico modo per ottenere una sufficiente confidenza che l'applicazione si comporti nel modo desiderato in determinate situazioni \`{e} il testing.
+
+Questa tesi analizza due aspetti critici del testing per dispositivi mobili, la gestione del lifecycle e la concorrenza tra eventi, prendendo il sistema operativo Android come esempio.
+
+I componenti delle applicazioni sono caratterizzati dal loro lifecycle (ciclo di vita), cio\`{e} diversi stadi come in esecuzione, in pausa, ecc. Questo meccanismo deve essere gestito con attenzione per evitare crash o comportamenti inaspettati, ma le tecniche disponibili per testare questo aspetto sono carenti. Questo documento si occupa di tale problema prima attraverso un'analisi statica del codice per riconoscere possibili criticit\`{a}, e successivamente tramite una tecnica dinamica che permette allo sviluppatore di controllare il lifecycle dell'applicazione per testarne la robustezza.
+
+In aggiunta alle transizioni del ciclo di vita, le applicazioni per dispositivi mobili sono caratterizzate da un gran numero di altri eventi, che possono essere elaborati a centinaia ogni minuto, come informazioni dai sensori, cambi di connettivit\`{a}, attivit\`{a} da parte dell'utente, ecc. Questi eventi possono essere registrati in molti ordini differenti e, se lo sviluppatore non li gestisce in modo corretto, possono causare dei problemi. L'obiettivo della seconda parte di questa tesi \`{e} quello di descrivere una tecnica per il testing che permette di rilevare diversi eventi durante un'esecuzione dell'applicazione e di esprimere delle condizioni di consistenza su di essi tramite un linguaggio di asserzioni temporali.
+
+\emptypage
 
 
 %..............................................................................%
 %............................. TABLE OF CONTENTS ..............................%
 %..............................................................................%
 
-\newpage
+
 \tableofcontents
-\newpage
+
+\emptypage
 
 
 %..............................................................................%
