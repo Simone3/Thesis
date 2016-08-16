@@ -8,7 +8,11 @@
 % Misc includes
 \usepackage{array}
 \usepackage{xcolor}
+
+% Long tables (span multiple pages)
 \usepackage{longtable}
+\setlength\LTleft{-0.7in} % set left and right margins for longtables, to center without considering document margins
+\setlength\LTright{-1in}
 
 % For title + abstract page
 \usepackage{titling}
@@ -961,9 +965,6 @@ The first type of checks focuses on single events at a time: for example we may 
 
 \subsubsection{Can Happen Only After}
 
-\begin{center}
-\bgroup
-\def\arraystretch{1.5}%
 \begin{longtable}{ | m{0.3cm} | m{15cm} | }
   \hline
   
@@ -1008,14 +1009,10 @@ The first type of checks focuses on single events at a time: for example we may 
   	\\ \hline  	
   	 
 \end{longtable}
-\egroup
-\end{center}
+
 
 \subsubsection{Can Happen Only Before}
 
-\begin{center}
-\bgroup
-\def\arraystretch{1.5}%
 \begin{longtable}{ | m{0.3cm} | m{15cm} | }
   \hline
   
@@ -1045,7 +1042,6 @@ The first type of checks focuses on single events at a time: for example we may 
   
 	\raisebox{-230pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide2.PNG}}
 	
-	
   	\\ \hline
   	
   \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
@@ -1059,14 +1055,9 @@ The first type of checks focuses on single events at a time: for example we may 
   	\\ \hline  	
   	 
 \end{longtable}
-\egroup
-\end{center}
 
 \subsubsection{Can Happen Only Between}
 
-\begin{center}
-\bgroup
-\def\arraystretch{1.5}%
 \begin{longtable}{ | m{0.3cm} | m{15cm} | }
   \hline
   
@@ -1096,7 +1087,6 @@ The first type of checks focuses on single events at a time: for example we may 
   
 	\raisebox{-230pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide3.PNG}}
 	
-	
   	\\ \hline
   	
   \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
@@ -1112,8 +1102,6 @@ The first type of checks focuses on single events at a time: for example we may 
   	\\ \hline  	
   	 
 \end{longtable}
-\egroup
-\end{center}
 
 \subsection{Checks on Sets of Events}
 
@@ -1129,9 +1117,6 @@ First Order Logic specifications use the counting quantifiers~\cite{Pratt-Hartma
 
 \subsubsection{Must Happen After}
 
-\begin{center}
-\bgroup
-\def\arraystretch{1.5}%
 \begin{longtable}{ | m{0.3cm} | m{15cm} | }
   \hline
   
@@ -1176,14 +1161,9 @@ First Order Logic specifications use the counting quantifiers~\cite{Pratt-Hartma
   	\\ \hline  	
   	 
 \end{longtable}
-\egroup
-\end{center}
 
 \subsubsection{Must Happen Before}
 
-\begin{center}
-\bgroup
-\def\arraystretch{1.5}%
 \begin{longtable}{ | m{0.3cm} | m{15cm} | }
   \hline
   
@@ -1213,7 +1193,6 @@ First Order Logic specifications use the counting quantifiers~\cite{Pratt-Hartma
   
 	\raisebox{-280pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide5.PNG}}
 	
-	
   	\\ \hline
   	
   \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
@@ -1227,14 +1206,9 @@ First Order Logic specifications use the counting quantifiers~\cite{Pratt-Hartma
   	\\ \hline  	
   	 
 \end{longtable}
-\egroup
-\end{center}
 
 \subsubsection{Must Happen Between}
 
-\begin{center}
-\bgroup
-\def\arraystretch{1.5}%
 \begin{longtable}{ | m{0.3cm} | m{15cm} | }
   \hline
   
@@ -1264,7 +1238,6 @@ First Order Logic specifications use the counting quantifiers~\cite{Pratt-Hartma
   
 	\raisebox{-190pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide6.PNG}}
 	
-	
   	\\ \hline
   	
   \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
@@ -1280,8 +1253,6 @@ First Order Logic specifications use the counting quantifiers~\cite{Pratt-Hartma
   	\\ \hline  	
   	 
 \end{longtable}
-\egroup
-\end{center}
 
 
 \subsection{Checks on the Whole Stream}
@@ -1290,9 +1261,6 @@ The third type of checks concerns the entire stream of events: they give the pos
 
 \subsubsection{Match In Order}
 
-\begin{center}
-\bgroup
-\def\arraystretch{1.5}%
 \begin{longtable}{ | m{0.3cm} | m{15cm} | }
   \hline
   
@@ -1321,7 +1289,7 @@ indexOf(e, m, i) \equiv \exists_{=i} e' \Big( match(e', m) \land before(e', e) \
 
   \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
   
-	\raisebox{-230pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide7.PNG}}
+	\raisebox{-240pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide7.PNG}}
 	
 	Note in particular the last case: the check implicitly states that the events must be exactly 3 and they must satisfy the three matchers.	If the third one is missing, the check fails.
 	
@@ -1342,14 +1310,9 @@ indexOf(e, m, i) \equiv \exists_{=i} e' \Big( match(e', m) \land before(e', e) \
   	\\ \hline  	
   	 
 \end{longtable}
-\egroup
-\end{center}
 
 \subsubsection{Are Ordered}
 
-\begin{center}
-\bgroup
-\def\arraystretch{1.5}%
 \begin{longtable}{ | m{0.3cm} | m{15cm} | }
   \hline
   
@@ -1378,8 +1341,7 @@ ordered(com, e1, e2) \equiv \bigg( \Big( com<0 \Rightarrow before(e1, e2) \Big) 
 
   \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
   
-	\raisebox{-160pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide8.PNG}}
-	
+	\raisebox{-170pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide8.PNG}}
 	
   	\\ \hline
   	
@@ -1404,8 +1366,6 @@ ordered(com, e1, e2) \equiv \bigg( \Big( com<0 \Rightarrow before(e1, e2) \Big) 
   	\\ \hline  	
   	 
 \end{longtable}
-\egroup
-\end{center}
 
 \subsection{Existential Checks}
 
@@ -1413,9 +1373,6 @@ These checks assess the existence of one or more events in the stream. Similarly
 
 \subsubsection{Exists An Event}
 
-\begin{center}
-\bgroup
-\def\arraystretch{1.5}%
 \begin{longtable}{ | m{0.3cm} | m{15cm} | }
   \hline
   
@@ -1443,8 +1400,7 @@ These checks assess the existence of one or more events in the stream. Similarly
 
   \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
   
-	\raisebox{-170pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide9.PNG}}
-	
+	\raisebox{-170pt}{\includegraphics[width=390px]{Images/Event/Lang/Slide9.PNG}}
 	
   	\\ \hline
   	
@@ -1458,14 +1414,9 @@ These checks assess the existence of one or more events in the stream. Similarly
   	\\ \hline  	
   	 
 \end{longtable}
-\egroup
-\end{center}
 
 \subsubsection{Exist Events}
 
-\begin{center}
-\bgroup
-\def\arraystretch{1.5}%
 \begin{longtable}{ | m{0.3cm} | m{15cm} | }
   \hline
   
@@ -1495,7 +1446,6 @@ These checks assess the existence of one or more events in the stream. Similarly
   
 	\raisebox{-170pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide10.PNG}}
 	
-	
   	\\ \hline
   	
   \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
@@ -1509,14 +1459,9 @@ These checks assess the existence of one or more events in the stream. Similarly
   	\\ \hline  	
   	 
 \end{longtable}
-\egroup
-\end{center}
 
 \subsubsection{Exist Events After}
 
-\begin{center}
-\bgroup
-\def\arraystretch{1.5}%
 \begin{longtable}{ | m{0.3cm} | m{15cm} | }
   \hline
   
@@ -1544,8 +1489,7 @@ These checks assess the existence of one or more events in the stream. Similarly
 
   \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
   
-	\raisebox{-200pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide16.PNG}}
-	
+	\raisebox{-200pt}{\includegraphics[width=390px]{Images/Event/Lang/Slide16.PNG}}
 	
   	\\ \hline
   	
@@ -1562,14 +1506,9 @@ These checks assess the existence of one or more events in the stream. Similarly
   	\\ \hline  	
   	 
 \end{longtable}
-\egroup
-\end{center}
 
 \subsubsection{Exist Events Before}
 
-\begin{center}
-\bgroup
-\def\arraystretch{1.5}%
 \begin{longtable}{ | m{0.3cm} | m{15cm} | }
   \hline
   
@@ -1597,8 +1536,7 @@ These checks assess the existence of one or more events in the stream. Similarly
 
   \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
   
-	\raisebox{-200pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide17.PNG}}
-	
+	\raisebox{-200pt}{\includegraphics[width=390px]{Images/Event/Lang/Slide17.PNG}}
 	
   	\\ \hline
   	
@@ -1615,14 +1553,9 @@ These checks assess the existence of one or more events in the stream. Similarly
   	\\ \hline  	
   	 
 \end{longtable}
-\egroup
-\end{center}
 
 \subsubsection{Exist Events Between}
 
-\begin{center}
-\bgroup
-\def\arraystretch{1.5}%
 \begin{longtable}{ | m{0.3cm} | m{15cm} | }
   \hline
   
@@ -1650,8 +1583,7 @@ These checks assess the existence of one or more events in the stream. Similarly
 
   \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
   
-	\raisebox{-200pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide18.PNG}}
-	
+	\raisebox{-200pt}{\includegraphics[width=390px]{Images/Event/Lang/Slide18.PNG}}
 	
   	\\ \hline
   	
@@ -1669,9 +1601,6 @@ These checks assess the existence of one or more events in the stream. Similarly
   	\\ \hline  	
   	 
 \end{longtable}
-\egroup
-\end{center}
-
 
 \subsection{Connectives between Checks}
 
@@ -1679,9 +1608,6 @@ These constructs allow to specify the standard logic connectives between one or 
 
 \subsubsection{And}
 
-\begin{center}
-\bgroup
-\def\arraystretch{1.5}%
 \begin{longtable}{ | m{0.3cm} | m{15cm} | }
   \hline
   
@@ -1709,8 +1635,7 @@ These constructs allow to specify the standard logic connectives between one or 
 
   \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
   
-	\raisebox{-105pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide11.png}}
-	
+	\raisebox{-105pt}{\includegraphics[width=390px]{Images/Event/Lang/Slide11.png}}
 	
   	\\ \hline
   	
@@ -1728,14 +1653,9 @@ These constructs allow to specify the standard logic connectives between one or 
   	\\ \hline  	
   	 
 \end{longtable}
-\egroup
-\end{center}
 
 \subsubsection{Or}
 
-\begin{center}
-\bgroup
-\def\arraystretch{1.5}%
 \begin{longtable}{ | m{0.3cm} | m{15cm} | }
   \hline
   
@@ -1765,7 +1685,6 @@ These constructs allow to specify the standard logic connectives between one or 
   
 	\raisebox{-105pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide12.PNG}}
 	
-	
   	\\ \hline
   	
   \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
@@ -1782,14 +1701,9 @@ These constructs allow to specify the standard logic connectives between one or 
   	\\ \hline  	
   	 
 \end{longtable}
-\egroup
-\end{center}
 
 \subsubsection{Not}
 
-\begin{center}
-\bgroup
-\def\arraystretch{1.5}%
 \begin{longtable}{ | m{0.3cm} | m{15cm} | }
   \hline
   
@@ -1817,8 +1731,7 @@ These constructs allow to specify the standard logic connectives between one or 
 
   \rotatebox[origin=c]{90}{\textbf{ Visual }} & 
   
-	\raisebox{-70pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide13.PNG}}
-	
+	\raisebox{-70pt}{\includegraphics[width=390px]{Images/Event/Lang/Slide13.PNG}}
 	
   	\\ \hline
   	
@@ -1833,14 +1746,9 @@ These constructs allow to specify the standard logic connectives between one or 
   	\\ \hline  	
   	 
 \end{longtable}
-\egroup
-\end{center}
 
 \subsubsection{Single Implication}
 
-\begin{center}
-\bgroup
-\def\arraystretch{1.5}%
 \begin{longtable}{ | m{0.3cm} | m{15cm} | }
   \hline
   
@@ -1870,7 +1778,6 @@ These constructs allow to specify the standard logic connectives between one or 
   
 	\raisebox{-140pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide14.PNG}}
 	
-	
   	\\ \hline
   	
   \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
@@ -1888,14 +1795,9 @@ These constructs allow to specify the standard logic connectives between one or 
   	\\ \hline  	
   	 
 \end{longtable}
-\egroup
-\end{center}
 
 \subsubsection{Double Implication}
 
-\begin{center}
-\bgroup
-\def\arraystretch{1.5}%
 \begin{longtable}{ | m{0.3cm} | m{15cm} | }
   \hline
   
@@ -1925,7 +1827,6 @@ These constructs allow to specify the standard logic connectives between one or 
   
 	\raisebox{-140pt}{\includegraphics[width=400px]{Images/Event/Lang/Slide15.PNG}}
 	
-	
   	\\ \hline
   	
   \rotatebox[origin=c]{90}{\textbf{ Code Example }} & 
@@ -1941,8 +1842,6 @@ These constructs allow to specify the standard logic connectives between one or 
   	\\ \hline  	
   	 
 \end{longtable}
-\egroup
-\end{center}
 
 \section{Design}\label{event_design}
 To implement the event-based testing approach described so far, the following main components are employed:
