@@ -14,15 +14,19 @@ public class Activity2 extends AppCompatActivity
             @Override
             public void onClick(View view)
             {
-                if(service!=null)
-                {
-                    int num = service.doSomeOperation();
-                    Toast.makeText(Activity2.this, "Result: "+num, Toast.LENGTH_SHORT).show();
-                }
-                else
-                {
-                    Toast.makeText(Activity2.this, "Wait for the service to start", Toast.LENGTH_SHORT).show();
-                }
+				// The commented if-then-else sequence is one of the solutions to handle the race condition
+				
+                // if(service!=null)
+                // {
+                     int num = service.doSomeOperation();
+                     Toast.makeText(Activity2.this, "Result: "+num, Toast.LENGTH_SHORT).show();
+                // }
+                // else
+                // {
+                //    Toast.makeText(Activity2.this,
+                //    "Wait for the service to start",
+                //    Toast.LENGTH_SHORT).show();
+                // }
             }
         });
     }
