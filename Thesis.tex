@@ -2081,6 +2081,31 @@ REPORT: All 131 events were in order}
 \end{itemize}
 The printed results first display the outcome of the check (as mentioned before, in this case all successes), then a sentence explaining the assertion meaning, and finally a report on what has been recorded. This latter part is not particularly useful for successful checks, but in case of failures it displays which events caused the issue to better identify the problem.
 
+\subsubsection{Check Results with Fault Seeding}
+Performing a fault seeding experiment in the application, i.e. modifying the source code by introducing plausible programming mistakes, it is possible to observe how the temporal assertions fail in case of bug.
+
+For example, in the code that handles the post publishing (\texttt{EditPostActivity}, lines 621-625), if the WordPress developers had forgotten to call the \texttt{finish()} method at line 625\footnote{\url{https://github.com/Simone3/WordPress-Android-2016-07-15/blob/develop/WordPress/src/main/java/org/wordpress/android/ui/posts/EditPostActivity.java\#L625}}, the user would have been able to edit the post content during the upload, possibly causing inconsistencies. In this case, the previously defined temporal assertion throws the error:
+
+\texttt{[FAILURE] IF (Exists an event that is post upload start) THEN (Every event that is post change happens before an event that is post upload start)\\
+	ERROR: Post content changed after the upload started!\\
+	REPORT: Event $\left\{\text{Post change on view 2131820907}\right\}$ was found after every event that is post upload start}
+	
+Which prints the assertion error defined by the developer and a report that states which event was found after the upload start.
+
+
+Another possible bug in the source code could be at line 802\footnote{\url{https://github.com/Simone3/WordPress-Android-2016-07-15/blob/develop/WordPress/src/main/java/org/xmlrpc/android/ApiHelper.java\#L802}} in the \texttt{ApiHelper} class. If, instead of computing the upload progress as the quotient of current bytes and total bytes, the developers had inverted the two operands, the system would have sent wrong progress updates. In this case, the linked temporal assertion outcome is:
+
+\texttt{[FAILURE] All events where each is media upload progress are in the order defined by the comparator: org.wordpress.android.ui.posts.EditPostActivityTest$1$1@806ccde\\
+	ERROR: Media upload progress updates are not sent correctly!\\
+	REPORT: Events $\left\{\text{Media upload progress 13001.5625\%}\right\}$ and $\left\{\text{Media upload progress 6500.7813\%}\right\}$ were not ordered}
+	
+
+A further example of check failure can be caused by removing line 621\footnote{\url{https://github.com/Simone3/WordPress-Android-2016-07-15/blob/develop/WordPress/src/main/java/org/wordpress/android/ui/posts/EditPostActivity.java\#L621}} of \texttt{EditPostActivity}. In the post publishing procedure, if the developers had forgotten to call \texttt{PostUploadService.addPostToUpload(mPost)} before actually starting the \texttt{PostUploadService}, the upload would have never started, making the "Publish" button look unresponsive. The check defined in the test case returns:
+
+\texttt{[FAILURE] Every event that is click on menu option <2131821737> is followed by at least 1 events where each (is post upload start or is any toast display)\\
+	ERROR: Clicking on 'publish' didn't perform the expected actions!\\
+	REPORT: $\left\{\text{Click on menu option 2131821737}\right\}$ was found but 0 events where each (is post upload start or is any toast display) were found afterwards}
+
 \subsubsection{Performance}
 In the case of the defined test suite, executing the same Espresso test with and without the Event Monitor (with 2 tests, 7 checks each and more than 130 observed events) a performance degradation of less than 3\% was registered (an average of 40 seconds with the monitor active against an average of 39 seconds without any event-related condition).
 
