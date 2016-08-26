@@ -79,6 +79,9 @@
 % Empty pages
 \newcommand{\emptypage} {\newpage\null\thispagestyle{empty}\newpage}
 
+% Prevent footnotes from being split in two pages (otherwise \url ones make the whole page in between clickable!)
+\interfootnotelinepenalty=10000
+
 % For links (should be the last included)
 \usepackage{url}
 \usepackage{hyperref}
@@ -413,7 +416,7 @@ Android is implemented as an event-based system. This is because a mobile device
 
 From an application point of view, events can be generated internally (e.g. from a Service/thread created by the application itself) or externally (e.g. sensor data). Each application is composed of several threads, a subset of which, called Looper threads, are in charge of processing events by invoking an appropriate event Handler for each of them.
 
-Events from a single thread are atomic, i.e. they are placed in a FIFO event queue and processes one by one. However, events produced by different threads are processed concurrently and not guaranteed to be ordered or atomic. For example, the user may click on a button while the application receives a network response and the device broadcasts some sensor data.
+Events from a single thread are atomic, i.e. they are placed in a FIFO event queue and processed one by one. However, events produced by different threads are processed concurrently and not guaranteed to be ordered or atomic. For example, the user may click on a button while the application receives a network response and the device broadcasts some sensor data.
 
 \begin{figure}
   \centering
@@ -425,7 +428,7 @@ Events from a single thread are atomic, i.e. they are placed in a FIFO event que
 Examples of events that can be observed in an Android application are:
 \begin{itemize}
 	\item User input events can be observed attaching listeners to View components. An event listener is a Java interface whose methods are called by the Android framework when the View is triggered by user interaction, for example the \texttt{onClick()} callback of a listener attached to a Button will be called when the user clicks on that button. The developer can then implement the callback to perform any action in response to the input event generation, e.g. starting another Activity.
-	\item Lifecycle events are triggered when there is a state transition of some component, like an Activity. For example, the \texttt{onPause()} callback is invoked when an Activity is paused.
+	\item Lifecycle events are triggered when a state transition of some component, such as an Activity, occurs. For example, the \texttt{onPause()} callback is invoked when an Activity is paused.
 	\item Broadcast events like system messages (e.g. device boot completed, alarm goes off, etc.) or application-specific messages are received by Broadcast Receivers in the \texttt{onReceive()} callback.
 	\item Asynchronous messages from services external to the application (e.g. sensor data, network requests, etc.) also have their specific callbacks.
 \end{itemize}
@@ -709,7 +712,7 @@ The extended class and the interfaces provide some utility methods that can be o
 In particular, a Detector that implements \texttt{JavaScanner} is able to visit the Java files via an Abstract Syntax Tree, represented with the \texttt{lombok.ast} API. The developer has two options:
 \begin{itemize}
 	\item Use the \texttt{Detector} callback methods to visit the nodes using the default AST Visitor. First of all, if the Detector is interested only in specific types of nodes in the AST (as it is usually the case) the developer should override the \texttt{getApplicableNodeTypes()} method and return a list of types (e.g. \texttt{ClassDeclatation}, \texttt{MethodInvocation}, etc.). The class also provides several other methods to focus the search, like \texttt{getApplicableMethods()} (return list of method names), \texttt{applicableSuperClasses()} (return list of super-classes names), etc. Once this is done, the developer can override the Detector methods like \texttt{visitMethod()} to receive all matching method invocations found in the tree, \texttt{checkClass()} to receive the matching class declarations, etc. to implement the rule logic.
-	\item Return in \texttt{createJavaVisitor()} method a custom implementation of the AST Visitor (subclass of \texttt{AstVisitor}) that implements the rule logic. Inside the AST Visitor the developer can override one or more methods that allow to visit every type of node in the tree such as \texttt{visitMethodDeclaration()}, \texttt{visitVariableDeclaration()}, \texttt{visitAnnotation()}, \texttt{visitWhile()}, etc. 
+	\item Return in \texttt{createJavaVisitor()} method a custom implementation of the AST Visitor (subclass of \texttt{AstVisitor}) that defines the rule logic. Inside the AST Visitor the developer can override one or more methods that allow to visit every type of node in the tree such as \texttt{visitMethodDeclaration()}, \texttt{visitVariableDeclaration()}, \texttt{visitAnnotation()}, \texttt{visitWhile()}, etc. 
 \end{itemize}
 If a problem is found during one of the callbacks, the Detector can call the \texttt{report()} method to pass the Issue, the location (i.e. file and line) and a message in order to show the warning to the developer.
 
@@ -968,6 +971,7 @@ In the proposed formalization, each check is described by:
 	\item Real code example: an example of check specification as implemented by the system. The structure of the Java classes and objects will be clear later when the implementation is explained in depth.
 \end{itemize}
 
+\clearpage % manually fix page layout
 
 \subsection{Checks on Single Events}
 
@@ -1665,6 +1669,8 @@ These constructs allow to specify the standard logic connectives between one or 
   	 
 \end{longtable}
 
+\clearpage % manually fix page layout
+
 \subsubsection{Or}
 
 \begin{longtable}{ | m{0.3cm} | m{15cm} | }
@@ -2082,7 +2088,7 @@ REPORT: All 131 events were in order}
 The printed results first display the outcome of the check (as mentioned before, in this case all successes), then a sentence explaining the assertion meaning, and finally a report on what has been recorded. This latter part is not particularly useful for successful checks, but in case of failures it displays which events caused the issue to better identify the problem.
 
 \subsubsection{Check Results with Fault Seeding}
-Performing a fault seeding experiment in the application, i.e. modifying the source code by introducing plausible programming mistakes, it is possible to observe how the temporal assertions fail in case of bug.
+Performing a fault seeding experiment in the application, i.e. modifying the source code by introducing plausible programming mistakes, it is possible to observe how temporal assertions help to detect and report a bug.
 
 For example, in the code that handles the post publishing (\texttt{EditPostActivity}, lines 621-625), if the WordPress developers had forgotten to call the \texttt{finish()} method at line 625\footnote{\url{https://github.com/Simone3/WordPress-Android-2016-07-15/blob/develop/WordPress/src/main/java/org/wordpress/android/ui/posts/EditPostActivity.java\#L625}}, the user would have been able to edit the post content during the upload, possibly causing inconsistencies. In this case, the previously defined temporal assertion throws the error:
 
